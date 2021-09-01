@@ -17,11 +17,11 @@ import org.identityconnectors.framework.common.objects.filter.EqualsIgnoreCaseFi
 import org.identityconnectors.framework.common.objects.filter.Filter;
 import org.identityconnectors.framework.spi.SearchResultsHandler;
 
-import cz.metacentrum.perun.openapi.PerunRPC;
-import cz.metacentrum.perun.openapi.model.Attribute;
-import cz.metacentrum.perun.openapi.model.RichUser;
-import cz.metacentrum.perun.openapi.model.User;
-import cz.metacentrum.perun.openapi.model.UserExtSource;
+import cz.metacentrum.perun.polygon.connector.rpc.openapi.PerunRPC;
+import cz.metacentrum.perun.polygon.connector.rpc.openapi.model.Attribute;
+import cz.metacentrum.perun.polygon.connector.rpc.openapi.model.RichUser;
+import cz.metacentrum.perun.polygon.connector.rpc.openapi.model.User;
+import cz.metacentrum.perun.polygon.connector.rpc.openapi.model.UserExtSource;
 
 public class UserSearch extends ObjectSearchBase {
 
