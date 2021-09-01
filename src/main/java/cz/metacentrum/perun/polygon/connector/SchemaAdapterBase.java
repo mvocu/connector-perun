@@ -6,9 +6,9 @@ import org.identityconnectors.common.logging.Log;
 import org.identityconnectors.framework.common.objects.AttributeInfoBuilder;
 import org.identityconnectors.framework.common.objects.ObjectClassInfoBuilder;
 
-import cz.metacentrum.perun.openapi.PerunRPC;
-import cz.metacentrum.perun.openapi.model.Attribute;
-import cz.metacentrum.perun.openapi.model.AttributeDefinition;
+import cz.metacentrum.perun.polygon.connector.rpc.openapi.PerunRPC;
+import cz.metacentrum.perun.polygon.connector.rpc.openapi.model.Attribute;
+import cz.metacentrum.perun.polygon.connector.rpc.openapi.model.AttributeDefinition;
 
 public abstract class SchemaAdapterBase implements SchemaAdapter {
 
