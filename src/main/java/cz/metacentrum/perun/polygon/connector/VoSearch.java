@@ -1,11 +1,8 @@
 package cz.metacentrum.perun.polygon.connector;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.identityconnectors.common.logging.Log;
-import org.identityconnectors.framework.common.objects.AttributeBuilder;
 import org.identityconnectors.framework.common.objects.AttributeUtil;
 import org.identityconnectors.framework.common.objects.ConnectorObjectBuilder;
 import org.identityconnectors.framework.common.objects.ObjectClass;
@@ -18,11 +15,9 @@ import org.identityconnectors.framework.common.objects.filter.EqualsIgnoreCaseFi
 import org.identityconnectors.framework.common.objects.filter.Filter;
 import org.identityconnectors.framework.spi.SearchResultsHandler;
 
-import cz.metacentrum.perun.openapi.PerunRPC;
-import cz.metacentrum.perun.openapi.model.Attribute;
-import cz.metacentrum.perun.openapi.model.RichUser;
-import cz.metacentrum.perun.openapi.model.User;
-import cz.metacentrum.perun.openapi.model.Vo;
+import cz.metacentrum.perun.polygon.connector.rpc.openapi.PerunRPC;
+import cz.metacentrum.perun.polygon.connector.rpc.openapi.model.Attribute;
+import cz.metacentrum.perun.polygon.connector.rpc.openapi.model.Vo;
 
 public class VoSearch extends ObjectSearchBase implements ObjectSearch {
 

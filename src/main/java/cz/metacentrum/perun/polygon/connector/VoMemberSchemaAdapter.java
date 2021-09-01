@@ -7,7 +7,7 @@ import org.identityconnectors.framework.common.objects.Name;
 import org.identityconnectors.framework.common.objects.ObjectClassInfoBuilder;
 import org.identityconnectors.framework.common.objects.Uid;
 
-import cz.metacentrum.perun.openapi.PerunRPC;
+import cz.metacentrum.perun.polygon.connector.rpc.openapi.PerunRPC;
 
 public class VoMemberSchemaAdapter extends SchemaAdapterBase implements SchemaAdapter {
 
