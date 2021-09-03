@@ -1,6 +1,6 @@
-package cz.metacentrum.perun.polygon.connector.rpc.openapi;
+package cz.metacentrum.perun.polygon.connector.rpc;
 
-import cz.metacentrum.perun.polygon.connector.rpc.openapi.invoker.ApiClient;
+import cz.metacentrum.perun.polygon.connector.rpc.invoker.ApiClient;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 

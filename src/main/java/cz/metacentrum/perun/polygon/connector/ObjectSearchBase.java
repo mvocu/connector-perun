@@ -29,7 +29,7 @@ import org.identityconnectors.framework.common.objects.filter.NotFilter;
 import org.identityconnectors.framework.common.objects.filter.OrFilter;
 import org.identityconnectors.framework.common.objects.filter.StartsWithFilter;
 
-import cz.metacentrum.perun.polygon.connector.rpc.openapi.PerunRPC;
+import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
 
 public abstract class ObjectSearchBase implements ObjectSearch {
 
@@ -199,7 +199,7 @@ public abstract class ObjectSearchBase implements ObjectSearch {
 		return query;
 	}
 
-	protected Attribute createAttribute(cz.metacentrum.perun.polygon.connector.rpc.openapi.model.Attribute attr) {
+	protected Attribute createAttribute(cz.metacentrum.perun.polygon.connector.rpc.model.Attribute attr) {
 		AttributeBuilder ab = new AttributeBuilder();
 		ab.setName(SchemaAdapterBase.getAttributeName(attr));
 		switch(attr.getType()) {

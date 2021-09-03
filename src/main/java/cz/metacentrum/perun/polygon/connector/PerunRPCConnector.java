@@ -35,7 +35,7 @@ import org.identityconnectors.framework.spi.operations.SchemaOp;
 import org.identityconnectors.framework.spi.operations.SearchOp;
 import org.identityconnectors.framework.spi.operations.TestOp;
 
-import cz.metacentrum.perun.polygon.connector.rpc.openapi.PerunRPC;
+import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
 
 /**
  * @author michal.vocu@gmail.com

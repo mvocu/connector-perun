@@ -15,9 +15,9 @@ import org.identityconnectors.framework.common.objects.filter.EqualsIgnoreCaseFi
 import org.identityconnectors.framework.common.objects.filter.Filter;
 import org.identityconnectors.framework.spi.SearchResultsHandler;
 
-import cz.metacentrum.perun.polygon.connector.rpc.openapi.PerunRPC;
-import cz.metacentrum.perun.polygon.connector.rpc.openapi.model.Attribute;
-import cz.metacentrum.perun.polygon.connector.rpc.openapi.model.Vo;
+import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
+import cz.metacentrum.perun.polygon.connector.rpc.model.Attribute;
+import cz.metacentrum.perun.polygon.connector.rpc.model.Vo;
 
 public class VoSearch extends ObjectSearchBase implements ObjectSearch {
 

@@ -18,13 +18,13 @@ import org.identityconnectors.framework.common.objects.filter.EqualsIgnoreCaseFi
 import org.identityconnectors.framework.common.objects.filter.Filter;
 import org.identityconnectors.framework.spi.SearchResultsHandler;
 
-import cz.metacentrum.perun.openapi.PerunRPC;
-import cz.metacentrum.perun.openapi.model.Attribute;
-import cz.metacentrum.perun.openapi.model.Group;
-import cz.metacentrum.perun.openapi.model.RichGroup;
-import cz.metacentrum.perun.openapi.model.RichUser;
-import cz.metacentrum.perun.openapi.model.User;
-import cz.metacentrum.perun.openapi.model.Vo;
+import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
+import cz.metacentrum.perun.polygon.connector.rpc.model.Attribute;
+import cz.metacentrum.perun.polygon.connector.rpc.model.Group;
+import cz.metacentrum.perun.polygon.connector.rpc.model.RichGroup;
+import cz.metacentrum.perun.polygon.connector.rpc.model.RichUser;
+import cz.metacentrum.perun.polygon.connector.rpc.model.User;
+import cz.metacentrum.perun.polygon.connector.rpc.model.Vo;
 
 public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 

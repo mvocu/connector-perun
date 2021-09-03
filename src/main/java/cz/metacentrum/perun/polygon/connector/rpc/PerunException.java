@@ -1,4 +1,4 @@
-package cz.metacentrum.perun.polygon.connector.rpc.openapi;
+package cz.metacentrum.perun.polygon.connector.rpc;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,9 +25,9 @@ public class PerunException extends Exception {
      */
     public static PerunException to(HttpClientErrorException ex) {
         try {
-            cz.metacentrum.perun.polygon.connector.rpc.openapi.model.PerunException pe = new ObjectMapper()
+            cz.metacentrum.perun.polygon.connector.rpc.model.PerunException pe = new ObjectMapper()
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                    .readValue(ex.getResponseBodyAsByteArray(), cz.metacentrum.perun.polygon.connector.rpc.openapi.model.PerunException.class);
+                    .readValue(ex.getResponseBodyAsByteArray(), cz.metacentrum.perun.polygon.connector.rpc.model.PerunException.class);
             return new PerunException(pe.getName() + ": " + pe.getMessage(), ex, pe.getName(), pe.getErrorId());
         } catch (IOException ioe) {
             return new PerunException("cannot parse remote Exception", ex, "", "");
