@@ -1,5 +1,6 @@
 package cz.metacentrum.perun.polygon.connector;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -48,14 +49,11 @@ public class UserSearch extends ObjectSearchBase {
 				// read single object
 				String uid = (String)AttributeUtil.getSingleValue(((EqualsFilter)filter).getAttribute());
 				LOG.info("Reading user with uuid {0}", uid);
-				List<RichUser> users = perun.getUsersManager().findRichUsersWithAttributes(uid, null);
+				List<RichUser> users = perun.getUsersManager().getRichUsersWithAttributesByIds(Arrays.asList(Integer.valueOf(uid)));
 				LOG.info("Query returned {0} users", users.size());
 				
-				Optional<RichUser> user = users.stream()
-						.filter(el -> { return el.getUuid().toString().equals(uid); })
-						.findFirst();
-				if(user.isPresent()) {
-					mapResult(user.get(), handler);
+				if(!users.isEmpty()) {
+					mapResult(users.get(0), handler);
 				}
 				SearchResult result = new SearchResult(
 						 null, 	/* cookie */ 
@@ -113,7 +111,7 @@ public class UserSearch extends ObjectSearchBase {
 		ConnectorObjectBuilder out = new ConnectorObjectBuilder();
 		out.setObjectClass(objectClass);
 		out.setName(mapName(user));
-		out.setUid(user.getUuid().toString());
+		out.setUid(user.getId().toString());
 		if(user.getUserAttributes() != null) {
 			for(Attribute attr: user.getUserAttributes()) {
 				out.addAttribute(createAttribute(attr));

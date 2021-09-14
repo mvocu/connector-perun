@@ -32,7 +32,7 @@ public class UserSchemaAdapter extends SchemaAdapterBase {
 
 		// remap __UID__ attribute
 		AttributeInfoBuilder uid = new AttributeInfoBuilder(Uid.NAME, String.class);
-		uid.setNativeName("user_uuid");
+		uid.setNativeName("user_id");
 		uid.setRequired(false);
 		uid.setCreateable(false);
 		uid.setUpdateable(false);
