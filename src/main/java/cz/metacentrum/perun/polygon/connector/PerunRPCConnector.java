@@ -139,6 +139,10 @@ implements PoolableConnector, TestOp, SchemaOp, SearchOp<Filter>
 			search = new GroupSearch(objectClass, perun);
 			break;
 			
+		case "VoMember":
+			search = new VoMemberSearch(objectClass, perun);
+			break;
+			
 		default:
 			break;
 		}

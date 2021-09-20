@@ -33,7 +33,7 @@ public class VoMemberSchemaAdapter extends SchemaAdapterBase implements SchemaAd
 
 		// remap __UID__ attribute
 		AttributeInfoBuilder uid = new AttributeInfoBuilder(Uid.NAME, String.class);
-		uid.setNativeName("member_uuid");
+		uid.setNativeName("member_id");
 		uid.setRequired(false);
 		uid.setCreateable(false);
 		uid.setUpdateable(false);

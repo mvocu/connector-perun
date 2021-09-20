@@ -2,7 +2,6 @@ package cz.metacentrum.perun.polygon.connector;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.identityconnectors.common.logging.Log;
@@ -22,8 +21,6 @@ import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Attribute;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Group;
 import cz.metacentrum.perun.polygon.connector.rpc.model.RichGroup;
-import cz.metacentrum.perun.polygon.connector.rpc.model.RichUser;
-import cz.metacentrum.perun.polygon.connector.rpc.model.User;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Vo;
 
 public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
@@ -75,7 +72,7 @@ public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 		Integer pageOffset = options.getPagedResultsOffset();
 		String pageResultsCookie = options.getPagedResultsCookie();
 		
-		List<RichGroup> groups = null;
+		List<RichGroup> groups = new ArrayList<RichGroup>();
 		int remaining = -1;
 
 		LOG.info("Reading list of VOs");
@@ -102,7 +99,6 @@ public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 				groups.add(perun.getGroupsManager().getRichGroupByIdWithAttributesByNames(groupId, null));
 			}
 		} else {
-			groups = new ArrayList<RichGroup>(); 
 			for(Vo vo : vos) {
 				LOG.info("Reading list of groups for VO {0}", vo.getId());
 				groups.addAll(perun.getGroupsManager().getAllRichGroupsWithAttributesByNames(vo.getId(), null));
