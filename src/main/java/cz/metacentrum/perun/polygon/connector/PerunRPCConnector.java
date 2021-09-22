@@ -66,6 +66,7 @@ implements PoolableConnector, TestOp, SchemaOp, SearchOp<Filter>
 		schemaBuilder.defineObjectClass((new VoSchemaAdapter(perun)).getObjectClass().build());
 		schemaBuilder.defineObjectClass((new VoMemberSchemaAdapter(perun)).getObjectClass().build());
 		schemaBuilder.defineObjectClass((new GroupSchemaAdapter(perun)).getObjectClass().build());
+		schemaBuilder.defineObjectClass((new FacilitySchemaAdapter(perun)).getObjectClass().build());
 		
 		schemaBuilder.defineOperationOption(OperationOptionInfoBuilder.buildPageSize(), SearchOp.class);
 		schemaBuilder.defineOperationOption(OperationOptionInfoBuilder.buildPagedResultsOffset(), SearchOp.class);
@@ -141,6 +142,10 @@ implements PoolableConnector, TestOp, SchemaOp, SearchOp<Filter>
 			
 		case "VoMember":
 			search = new VoMemberSearch(objectClass, perun);
+			break;
+			
+		case "Facility":
+			search = new FacilitySearch(objectClass, perun);
 			break;
 			
 		default:
