@@ -1,9 +1,6 @@
 package cz.metacentrum.perun.polygon.connector;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.identityconnectors.common.logging.Log;
 import org.identityconnectors.framework.common.objects.AttributeUtil;
@@ -21,14 +18,10 @@ import org.identityconnectors.framework.spi.SearchResultsHandler;
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Attribute;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Facility;
-import cz.metacentrum.perun.polygon.connector.rpc.model.RichFacility;
-import cz.metacentrum.perun.polygon.connector.rpc.model.RichUser;
-import cz.metacentrum.perun.polygon.connector.rpc.model.User;
-import cz.metacentrum.perun.polygon.connector.rpc.model.UserExtSource;
 
 public class FacilitySearch extends ObjectSearchBase implements ObjectSearch {
 
-	private static final Log LOG = Log.getLog(UserSearch.class);
+	private static final Log LOG = Log.getLog(FacilitySearch.class);
 
 	public FacilitySearch(ObjectClass objectClass, PerunRPC perun) {
 		super(objectClass, perun);
