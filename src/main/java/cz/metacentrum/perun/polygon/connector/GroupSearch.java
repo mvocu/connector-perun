@@ -2,6 +2,7 @@ package cz.metacentrum.perun.polygon.connector;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.identityconnectors.common.logging.Log;
@@ -46,9 +47,10 @@ public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 				String uid = (String)AttributeUtil.getSingleValue(((EqualsFilter)filter).getAttribute());
 				LOG.info("Reading group with id {0}", uid);
 				RichGroup group = perun.getGroupsManager().getRichGroupByIdWithAttributesByNames(Integer.valueOf(uid), null);
+				Vo vo = perun.getVosManager().getVoById(group.getVoId());
 				LOG.info("Query returned {0} group", group);
 				if(group != null) {
-					mapResult(group, handler);
+					mapResult(vo.getName(), group, handler);
 				}
 				SearchResult result = new SearchResult(
 						 null, 	/* cookie */ 
@@ -79,6 +81,8 @@ public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 		List<Vo> vos = perun.getVosManager().getAllVos();
 		LOG.info("Query returned {0} VOs", vos.size());
 		
+		Map<Integer, String> vo_names = vos.stream().collect(Collectors.toMap((vo -> vo.getId()), (vo -> vo.getName()) ));
+		
 		LOG.info("Reading {0} groups from page at offset {1}", pageSize, pageOffset);
 		if(pageSize > 0) {
 			List<Group> partGroups = new ArrayList<Group>();
@@ -107,7 +111,7 @@ public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 		}
 		LOG.info("Query returned {0} groups", groups.size());
 		for(RichGroup group : groups) {
-			mapResult(group, handler);
+			mapResult(vo_names.get(group.getVoId()), group, handler);
 		}
 		SearchResult result = new SearchResult(
 				 pageResultsCookie, 	/* cookie */ 
@@ -117,10 +121,10 @@ public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 		((SearchResultsHandler)handler).handleResult(result);
 	}
 
-	private void mapResult(RichGroup group, ResultsHandler handler) {
+	private void mapResult(String prefix, RichGroup group, ResultsHandler handler) {
 		ConnectorObjectBuilder out = new ConnectorObjectBuilder();
 		out.setObjectClass(objectClass);
-		out.setName(group.getName());
+		out.setName(prefix + ":" + group.getName());
 		out.setUid(group.getId().toString());
 		if(group.getAttributes() != null) {
 			for(Attribute attr: group.getAttributes()) {
