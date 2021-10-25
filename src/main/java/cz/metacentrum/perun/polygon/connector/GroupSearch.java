@@ -2,6 +2,7 @@ package cz.metacentrum.perun.polygon.connector;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.identityconnectors.common.logging.Log;
@@ -27,6 +28,51 @@ public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 
 	private static final Log LOG = Log.getLog(GroupSearch.class);
 
+	public class GroupInfoObject {
+		public RichGroup 	group;
+		public Integer		parentGroupId;
+		public List<Integer> includedGroups;
+
+		
+		public GroupInfoObject(RichGroup group, Integer parentGroupId, List<Integer> includedGroups) {
+			super();
+			this.group = group;
+			this.parentGroupId = parentGroupId;
+			this.includedGroups = includedGroups;
+		}
+		
+		public GroupInfoObject(RichGroup group) {
+			super();
+			this.group = group;
+		}
+
+		public RichGroup getGroup() {
+			return group;
+		}
+
+		public void setGroup(RichGroup group) {
+			this.group = group;
+		}
+
+		public Integer getParentGroupId() {
+			return parentGroupId;
+		}
+
+		public void setParentGroupId(Integer parentGroupId) {
+			this.parentGroupId = parentGroupId;
+		}
+
+		public List<Integer> getIncludedGroups() {
+			return includedGroups;
+		}
+
+		public void setIncludedGroups(List<Integer> includedGroups) {
+			this.includedGroups = includedGroups;
+		}
+		
+	}
+	
+	
 	public GroupSearch(ObjectClass objectClass, PerunRPC perun) {
 		super(objectClass, perun);
 	}
@@ -46,9 +92,11 @@ public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 				String uid = (String)AttributeUtil.getSingleValue(((EqualsFilter)filter).getAttribute());
 				LOG.info("Reading group with id {0}", uid);
 				RichGroup group = perun.getGroupsManager().getRichGroupByIdWithAttributesByNames(Integer.valueOf(uid), null);
+				Vo vo = perun.getVosManager().getVoById(group.getVoId());
 				LOG.info("Query returned {0} group", group);
 				if(group != null) {
-					mapResult(group, handler);
+					GroupInfoObject group_info = new GroupInfoObject(group);
+					mapResult(vo.getName(), group_info, handler);
 				}
 				SearchResult result = new SearchResult(
 						 null, 	/* cookie */ 
@@ -79,6 +127,8 @@ public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 		List<Vo> vos = perun.getVosManager().getAllVos();
 		LOG.info("Query returned {0} VOs", vos.size());
 		
+		Map<Integer, String> vo_names = vos.stream().collect(Collectors.toMap((vo -> vo.getId()), (vo -> vo.getName()) ));
+		
 		LOG.info("Reading {0} groups from page at offset {1}", pageSize, pageOffset);
 		if(pageSize > 0) {
 			List<Group> partGroups = new ArrayList<Group>();
@@ -107,7 +157,8 @@ public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 		}
 		LOG.info("Query returned {0} groups", groups.size());
 		for(RichGroup group : groups) {
-			mapResult(group, handler);
+			GroupInfoObject group_info = new GroupInfoObject(group);
+			mapResult(vo_names.get(group.getVoId()), group_info, handler);
 		}
 		SearchResult result = new SearchResult(
 				 pageResultsCookie, 	/* cookie */ 
@@ -117,13 +168,13 @@ public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 		((SearchResultsHandler)handler).handleResult(result);
 	}
 
-	private void mapResult(RichGroup group, ResultsHandler handler) {
+	private void mapResult(String prefix, GroupInfoObject group_info, ResultsHandler handler) {
 		ConnectorObjectBuilder out = new ConnectorObjectBuilder();
 		out.setObjectClass(objectClass);
-		out.setName(group.getName());
-		out.setUid(group.getId().toString());
-		if(group.getAttributes() != null) {
-			for(Attribute attr: group.getAttributes()) {
+		out.setName(prefix + ":" + group_info.getGroup().getName());
+		out.setUid(group_info.getGroup().getId().toString());
+		if(group_info.getGroup().getAttributes() != null) {
+			for(Attribute attr: group_info.getGroup().getAttributes()) {
 				out.addAttribute(createAttribute(attr));
 			}
 		}
