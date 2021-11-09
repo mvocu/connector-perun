@@ -46,6 +46,24 @@ public class GroupSchemaAdapter extends SchemaAdapterBase implements SchemaAdapt
 		name.setRequired(true);
 		group.addAttributeInfo(name.build());
 		
+		// parent group id
+		AttributeInfoBuilder parent_group_id = new AttributeInfoBuilder("group_parent_group_id", Integer.class);
+		parent_group_id.setNativeName(NS_GROUP_ATTR + ":parent_group_id");
+		parent_group_id.setMultiValued(false);
+		parent_group_id.setCreateable(true);
+		parent_group_id.setUpdateable(true);
+		parent_group_id.setRequired(false);
+		group.addAttributeInfo(parent_group_id.build());
+
+		// included in group id
+		AttributeInfoBuilder included_in_group_id = new AttributeInfoBuilder("group_included_in_group_id", Integer.class);
+		included_in_group_id.setNativeName(NS_GROUP_ATTR + ":included_in_group_id");
+		included_in_group_id.setMultiValued(true);
+		included_in_group_id.setCreateable(true);
+		included_in_group_id.setUpdateable(true);
+		included_in_group_id.setRequired(false);
+		group.addAttributeInfo(included_in_group_id.build());
+
 		// read User attribute definitions from Perun
 		addAttributesFromNamespace(group, NS_GROUP_ATTR_CORE, attrNames);
 		addAttributesFromNamespace(group, NS_GROUP_ATTR_DEF, attrNames);

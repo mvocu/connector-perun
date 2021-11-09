@@ -80,21 +80,16 @@ public class VoMemberSearch extends ObjectSearchBase implements ObjectSearch {
 		Integer pageOffset = options.getPagedResultsOffset();
 		String pageResultsCookie = options.getPagedResultsCookie();
 		
-		LOG.info("Reading list of VOs");
-		List<Vo> vos = perun.getVosManager().getAllVos();
-		LOG.info("Query returned {0} VOs", vos.size());
-		
+
 		List<RichMember> members = new ArrayList<RichMember>();
 		int remaining = -1;
 		
 		LOG.info("Reading {0} members from page at offset {1}", pageSize, pageOffset);
 		if(pageSize > 0) {
 			List<Member> partMembers = new ArrayList<Member>();
-			for(Vo vo : vos) {
-				LOG.info("Reading list of members for VO {0}", vo.getId());
-				partMembers.addAll(perun.getMembersManager().getMembers(vo.getId(), null));
-				LOG.info("Total members so far: {0}", partMembers.size());
-			}
+			LOG.info("Reading list of members.");
+			partMembers.addAll(perun.getMembersManager().getAllMembers());
+			LOG.info("Total members acquired: {0}", partMembers.size());
 			List<Integer> memberIds = partMembers.stream()
 				.map(member -> { return member.getId(); })
 				.sorted()
@@ -105,8 +100,14 @@ public class VoMemberSearch extends ObjectSearchBase implements ObjectSearch {
 			remaining = size - last;
 			members.addAll(perun.getMembersManager().getRichMembersByIds(memberIds, null));
 		} else {
+			LOG.info("Reading list of VOs");
+			List<Vo> vos = perun.getVosManager().getAllVos();
+			LOG.info("Query returned {0} VOs", vos.size());
+
 			for(Vo vo : vos) {
+				LOG.info("Reading list of members for VO: {0}", vo.getId());
 				members.addAll(perun.getMembersManager().getCompleteRichMembersForVo(vo.getId(), null, null));
+				LOG.info("Total members read so far: {0}", members.size());
 			}
 		}
 		LOG.info("Query returned {0} members", members.size());

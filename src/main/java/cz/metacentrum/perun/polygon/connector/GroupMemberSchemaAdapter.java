@@ -69,7 +69,7 @@ public class GroupMemberSchemaAdapter extends SchemaAdapterBase implements Schem
 		membership_type.setMultiValued(false);
 		membership_type.setCreateable(true);
 		membership_type.setUpdateable(true);
-		membership_type.setRequired(true);
+		membership_type.setRequired(false);
 		groupMember.addAttributeInfo(membership_type.build());
 		
 		// source group id
@@ -78,7 +78,7 @@ public class GroupMemberSchemaAdapter extends SchemaAdapterBase implements Schem
 		source_group_id.setMultiValued(false);
 		source_group_id.setCreateable(true);
 		source_group_id.setUpdateable(true);
-		source_group_id.setRequired(true);
+		source_group_id.setRequired(false);
 		groupMember.addAttributeInfo(source_group_id.build());
 
 		// source group status
@@ -87,7 +87,7 @@ public class GroupMemberSchemaAdapter extends SchemaAdapterBase implements Schem
 		source_group_status.setMultiValued(false);
 		source_group_status.setCreateable(true);
 		source_group_status.setUpdateable(true);
-		source_group_status.setRequired(true);
+		source_group_status.setRequired(false);
 		groupMember.addAttributeInfo(source_group_status.build());
 
 		// read GroupMember attribute definitions from Perun

@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.identityconnectors.common.logging.Log;
+import org.identityconnectors.framework.common.objects.AttributeBuilder;
 import org.identityconnectors.framework.common.objects.AttributeUtil;
 import org.identityconnectors.framework.common.objects.ConnectorObjectBuilder;
 import org.identityconnectors.framework.common.objects.ObjectClass;
@@ -30,15 +31,13 @@ public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 
 	public class GroupInfoObject {
 		public RichGroup 	group;
-		public Integer		parentGroupId;
-		public List<Integer> includedGroups;
+		public List<Integer> 	includedInGroups;
 
 		
-		public GroupInfoObject(RichGroup group, Integer parentGroupId, List<Integer> includedGroups) {
+		public GroupInfoObject(RichGroup group, List<Integer> includedInGroups) {
 			super();
 			this.group = group;
-			this.parentGroupId = parentGroupId;
-			this.includedGroups = includedGroups;
+			this.includedInGroups = includedInGroups;
 		}
 		
 		public GroupInfoObject(RichGroup group) {
@@ -55,19 +54,15 @@ public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 		}
 
 		public Integer getParentGroupId() {
-			return parentGroupId;
+			return this.group.getParentGroupId();
 		}
 
-		public void setParentGroupId(Integer parentGroupId) {
-			this.parentGroupId = parentGroupId;
+		public List<Integer> getIncludedInGroups() {
+			return includedInGroups;
 		}
 
-		public List<Integer> getIncludedGroups() {
-			return includedGroups;
-		}
-
-		public void setIncludedGroups(List<Integer> includedGroups) {
-			this.includedGroups = includedGroups;
+		public void setIncludedInGroups(List<Integer> includedInGroups) {
+			this.includedInGroups = includedInGroups;
 		}
 		
 	}
@@ -96,6 +91,10 @@ public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 				LOG.info("Query returned {0} group", group);
 				if(group != null) {
 					GroupInfoObject group_info = new GroupInfoObject(group);
+					List<Group> includedIn = perun.getGroupsManager().getGroupUnions(group.getId(), true);
+					group_info.setIncludedInGroups(includedIn.stream()
+							.map(g -> g.getId())
+							.collect(Collectors.toList()));
 					mapResult(vo.getName(), group_info, handler);
 				}
 				SearchResult result = new SearchResult(
@@ -158,6 +157,10 @@ public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 		LOG.info("Query returned {0} groups", groups.size());
 		for(RichGroup group : groups) {
 			GroupInfoObject group_info = new GroupInfoObject(group);
+			List<Group> includedIn = perun.getGroupsManager().getGroupUnions(group.getId(), true);
+			group_info.setIncludedInGroups(includedIn.stream()
+					.map(g -> g.getId())
+					.collect(Collectors.toList()));
 			mapResult(vo_names.get(group.getVoId()), group_info, handler);
 		}
 		SearchResult result = new SearchResult(
@@ -173,6 +176,18 @@ public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 		out.setObjectClass(objectClass);
 		out.setName(prefix + ":" + group_info.getGroup().getName());
 		out.setUid(group_info.getGroup().getId().toString());
+		// -- manually mapped attributes:
+		// group_parent_group_id
+		AttributeBuilder ab = new AttributeBuilder();
+		ab.setName("group_parent_group_id");
+		ab.addValue(group_info.getParentGroupId());
+		out.addAttribute(ab.build());
+		// group_included_in_group_id
+		ab = new AttributeBuilder();
+		ab.setName("group_included_in_group_id");
+		ab.addValue(group_info.getIncludedInGroups());
+		out.addAttribute(ab.build());
+		// defined group attributes
 		if(group_info.getGroup().getAttributes() != null) {
 			for(Attribute attr: group_info.getGroup().getAttributes()) {
 				out.addAttribute(createAttribute(attr));

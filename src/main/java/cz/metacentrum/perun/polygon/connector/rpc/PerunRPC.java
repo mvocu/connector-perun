@@ -26,6 +26,7 @@ public class PerunRPC {
     final private ApiClient apiClient;
 
     final private AttributesManagerApi attributesManager;
+    final private AuditMessagesManagerApi auditlogManager;
     final private AuthzResolverApi authzResolver;
     final private DatabaseManagerApi databaseManager;
     final private ExtSourcesManagerApi extSourcesManager;
@@ -39,6 +40,7 @@ public class PerunRPC {
     final private UtilsApi utils;
     final private VosManagerApi vosManager;
     final private ServicesManagerApi servicesManager;
+    final private IntegrationManagerApi integrationManager;
 
     public PerunRPC(RestTemplate restTemplate) {
         if (restTemplate == null) {
@@ -49,6 +51,7 @@ public class PerunRPC {
         apiClient.setUserAgent("Perun OpenAPI Java client");
         //all the managers share the ApiClient and thus the connection pool and cookies
         attributesManager = new AttributesManagerApi(apiClient);
+        auditlogManager = new AuditMessagesManagerApi(apiClient);
         authzResolver = new AuthzResolverApi(apiClient);
         databaseManager = new DatabaseManagerApi(apiClient);
         extSourcesManager = new ExtSourcesManagerApi(apiClient);
@@ -62,6 +65,7 @@ public class PerunRPC {
         utils = new UtilsApi(apiClient);
         vosManager = new VosManagerApi(apiClient);
         servicesManager = new ServicesManagerApi(apiClient);
+        integrationManager = new IntegrationManagerApi(apiClient);
     }
 
     public PerunRPC() {
@@ -103,6 +107,10 @@ public class PerunRPC {
 
     public AttributesManagerApi getAttributesManager() {
         return attributesManager;
+    }
+
+    public AuditMessagesManagerApi getAuditlogManager() {
+	return auditlogManager;
     }
 
     public AuthzResolverApi getAuthzResolver() {
@@ -155,5 +163,9 @@ public class PerunRPC {
 
     public ServicesManagerApi getServicesManager() {
         return servicesManager;
+    }
+    
+    public IntegrationManagerApi getIntegrationManager() {
+	return integrationManager; 
     }
 }
