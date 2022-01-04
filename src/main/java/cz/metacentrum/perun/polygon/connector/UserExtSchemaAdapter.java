@@ -45,6 +45,24 @@ public class UserExtSchemaAdapter extends SchemaAdapterBase {
 		name.setRequired(true);
 		user.addAttributeInfo(name.build());
 		
+		// login attribute
+		AttributeInfoBuilder login = new AttributeInfoBuilder("ues_login", String.class);
+		login.setNativeName("urn:perun:ues:attribute-def:ues_login");
+		login.setRequired(true);
+		login.setCreateable(false);
+		login.setUpdateable(false);
+		login.setReadable(true);
+		user.addAttributeInfo(login.build());
+
+		// loa attribute
+		AttributeInfoBuilder loa = new AttributeInfoBuilder("ues_loa", Integer.class);
+		loa.setNativeName("urn:perun:ues:attribute-def:ues_loa");
+		loa.setRequired(true);
+		loa.setCreateable(false);
+		loa.setUpdateable(false);
+		loa.setReadable(true);
+		user.addAttributeInfo(loa.build());
+
 		// read User attribute definitions from Perun
 		addAttributesFromNamespace(user, NS_UES_ATTR_CORE, attrNames);
 		addAttributesFromNamespace(user, NS_UES_ATTR_DEF, attrNames);

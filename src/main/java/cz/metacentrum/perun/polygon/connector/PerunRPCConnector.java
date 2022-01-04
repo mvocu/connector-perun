@@ -64,6 +64,7 @@ implements PoolableConnector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp
 		
 		SchemaBuilder schemaBuilder = new SchemaBuilder(PerunRPCConnector.class);
 
+		schemaBuilder.defineObjectClass((new ExtSourceSchemaAdapter(perun)).getObjectClass().build());
 		schemaBuilder.defineObjectClass((new UserSchemaAdapter(perun)).getObjectClass().build());
 		schemaBuilder.defineObjectClass((new UserExtSchemaAdapter(perun)).getObjectClass().build());
 		schemaBuilder.defineObjectClass((new VoSchemaAdapter(perun)).getObjectClass().build());
@@ -132,10 +133,18 @@ implements PoolableConnector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp
 		
 		switch(objectClass.getObjectClassValue()) {
 
+		case "ExtSource":
+			search = new ExtSourceSearch(objectClass, perun);
+			break;
+			
 		case "User":
 			search = new UserSearch(objectClass, perun, configuration.getPerunNamespace());
 			break;
 
+		case "UserExtSource":
+			search = new UserExtSearch(objectClass, perun);
+			break;
+			
 		case "VirtualOrganization":
 			search = new VoSearch(objectClass, perun);
 			break;
