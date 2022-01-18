@@ -19,6 +19,7 @@ import org.identityconnectors.framework.common.objects.filter.EqualsIgnoreCaseFi
 import org.identityconnectors.framework.common.objects.filter.Filter;
 import org.identityconnectors.framework.spi.SearchResultsHandler;
 
+import cz.metacentrum.perun.polygon.connector.GroupSchemaAdapter.GroupInfoObject;
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Attribute;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Group;
@@ -29,47 +30,8 @@ public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 
 	private static final Log LOG = Log.getLog(GroupSearch.class);
 
-	public class GroupInfoObject {
-		public RichGroup 	group;
-		public List<Integer> 	includedInGroups;
-
-		
-		public GroupInfoObject(RichGroup group, List<Integer> includedInGroups) {
-			super();
-			this.group = group;
-			this.includedInGroups = includedInGroups;
-		}
-		
-		public GroupInfoObject(RichGroup group) {
-			super();
-			this.group = group;
-		}
-
-		public RichGroup getGroup() {
-			return group;
-		}
-
-		public void setGroup(RichGroup group) {
-			this.group = group;
-		}
-
-		public Integer getParentGroupId() {
-			return this.group.getParentGroupId();
-		}
-
-		public List<Integer> getIncludedInGroups() {
-			return includedInGroups;
-		}
-
-		public void setIncludedInGroups(List<Integer> includedInGroups) {
-			this.includedInGroups = includedInGroups;
-		}
-		
-	}
-	
-	
-	public GroupSearch(ObjectClass objectClass, PerunRPC perun) {
-		super(objectClass, perun);
+	public GroupSearch(ObjectClass objectClass, SchemaAdapter adapter, PerunRPC perun) {
+		super(objectClass, adapter, perun);
 	}
 
 	@Override
@@ -90,12 +52,12 @@ public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 				Vo vo = perun.getVosManager().getVoById(group.getVoId());
 				LOG.info("Query returned {0} group", group);
 				if(group != null) {
-					GroupInfoObject group_info = new GroupInfoObject(group);
+					GroupInfoObject group_info = ((GroupSchemaAdapter)schemaAdapter).new GroupInfoObject(vo.getName(), group);
 					List<Group> includedIn = perun.getGroupsManager().getGroupUnions(group.getId(), true);
 					group_info.setIncludedInGroups(includedIn.stream()
 							.map(g -> g.getId())
 							.collect(Collectors.toList()));
-					mapResult(vo.getName(), group_info, handler);
+					mapResult(group_info, handler);
 				}
 				SearchResult result = new SearchResult(
 						 null, 	/* cookie */ 
@@ -156,12 +118,12 @@ public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 		}
 		LOG.info("Query returned {0} groups", groups.size());
 		for(RichGroup group : groups) {
-			GroupInfoObject group_info = new GroupInfoObject(group);
+			GroupInfoObject group_info = ((GroupSchemaAdapter)schemaAdapter).new GroupInfoObject(vo_names.get(group.getVoId()), group);
 			List<Group> includedIn = perun.getGroupsManager().getGroupUnions(group.getId(), true);
 			group_info.setIncludedInGroups(includedIn.stream()
 					.map(g -> g.getId())
 					.collect(Collectors.toList()));
-			mapResult(vo_names.get(group.getVoId()), group_info, handler);
+			mapResult(group_info, handler);
 		}
 		SearchResult result = new SearchResult(
 				 pageResultsCookie, 	/* cookie */ 
@@ -171,28 +133,8 @@ public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 		((SearchResultsHandler)handler).handleResult(result);
 	}
 
-	private void mapResult(String prefix, GroupInfoObject group_info, ResultsHandler handler) {
-		ConnectorObjectBuilder out = new ConnectorObjectBuilder();
-		out.setObjectClass(objectClass);
-		out.setName(prefix + ":" + group_info.getGroup().getName());
-		out.setUid(group_info.getGroup().getId().toString());
-		// -- manually mapped attributes:
-		// group_parent_group_id
-		AttributeBuilder ab = new AttributeBuilder();
-		ab.setName("group_parent_group_id");
-		ab.addValue(group_info.getParentGroupId());
-		out.addAttribute(ab.build());
-		// group_included_in_group_id
-		ab = new AttributeBuilder();
-		ab.setName("group_included_in_group_id");
-		ab.addValue(group_info.getIncludedInGroups());
-		out.addAttribute(ab.build());
-		// defined group attributes
-		if(group_info.getGroup().getAttributes() != null) {
-			for(Attribute attr: group_info.getGroup().getAttributes()) {
-				out.addAttribute(createAttribute(attr));
-			}
-		}
+	private void mapResult(GroupInfoObject group_info, ResultsHandler handler) {
+		ConnectorObjectBuilder out = schemaAdapter.mapObject(objectClass, group_info);
 		handler.handle(out.build());
 	}
 

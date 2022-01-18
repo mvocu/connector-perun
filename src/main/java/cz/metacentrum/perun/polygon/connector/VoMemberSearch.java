@@ -1,9 +1,7 @@
 package cz.metacentrum.perun.polygon.connector;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.identityconnectors.common.logging.Log;
@@ -20,22 +18,16 @@ import org.identityconnectors.framework.common.objects.filter.Filter;
 import org.identityconnectors.framework.spi.SearchResultsHandler;
 
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
-import cz.metacentrum.perun.polygon.connector.rpc.model.Attribute;
-import cz.metacentrum.perun.polygon.connector.rpc.model.Group;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Member;
-import cz.metacentrum.perun.polygon.connector.rpc.model.RichGroup;
 import cz.metacentrum.perun.polygon.connector.rpc.model.RichMember;
-import cz.metacentrum.perun.polygon.connector.rpc.model.RichUser;
-import cz.metacentrum.perun.polygon.connector.rpc.model.User;
-import cz.metacentrum.perun.polygon.connector.rpc.model.UserExtSource;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Vo;
 
 public class VoMemberSearch extends ObjectSearchBase implements ObjectSearch {
 
 	private static final Log LOG = Log.getLog(VoMemberSearch.class);
 	
-	public VoMemberSearch(ObjectClass objectClass, PerunRPC perun) {
-		super(objectClass, perun);
+	public VoMemberSearch(ObjectClass objectClass, SchemaAdapter adapter, PerunRPC perun) {
+		super(objectClass, adapter, perun);
 	}
 
 	@Override
@@ -123,20 +115,8 @@ public class VoMemberSearch extends ObjectSearchBase implements ObjectSearch {
 	}
 
 	private void mapResult(RichMember member, ResultsHandler handler) {
-		ConnectorObjectBuilder out = new ConnectorObjectBuilder();
-		out.setObjectClass(objectClass);
-		out.setName(mapName(member));
-		out.setUid(member.getId().toString());
-		if(member.getMemberAttributes() != null) {
-			for(Attribute attr: member.getMemberAttributes()) {
-				out.addAttribute(createAttribute(attr));
-			}
-		}
+		ConnectorObjectBuilder out = schemaAdapter.mapObject(objectClass, member);
 		handler.handle(out.build());
-	}
-
-	private String mapName(RichMember member) {
-		return member.getVoId().toString() + ":" + member.getUserId().toString();
 	}
 
 }

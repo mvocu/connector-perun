@@ -28,11 +28,9 @@ public class UserSearch extends ObjectSearchBase {
 
 	private static final Log LOG = Log.getLog(UserSearch.class);
 	
-	private String namespace;
 	
-	public UserSearch(ObjectClass objectClass, PerunRPC perun, String namespace) {
-		super(objectClass, perun);
-		this.namespace = namespace;
+	public UserSearch(ObjectClass objectClass, SchemaAdapter adapter, PerunRPC perun) {
+		super(objectClass, adapter, perun);
 	}
 
 	@Override
@@ -108,27 +106,9 @@ public class UserSearch extends ObjectSearchBase {
 	}
 
 	private void mapResult(RichUser user, ResultsHandler handler) {
-		ConnectorObjectBuilder out = new ConnectorObjectBuilder();
-		out.setObjectClass(objectClass);
-		out.setName(mapName(user));
-		out.setUid(user.getId().toString());
-		if(user.getUserAttributes() != null) {
-			for(Attribute attr: user.getUserAttributes()) {
-				out.addAttribute(createAttribute(attr));
-			}
-		}
+		ConnectorObjectBuilder out = schemaAdapter.mapObject(objectClass, user);
 		handler.handle(out.build());
 	}
 
-	private String mapName(RichUser user) {
-		Optional<UserExtSource> ues = user.getUserExtSources().stream()
-			.filter(ue -> { return ue.getExtSource().getName().equals(namespace); })
-			.findFirst();
-		if(ues.isPresent()) {
-			return ues.get().getLogin();
-		} else {
-			return user.getUuid().toString();
-		}
-	}
 	
 }

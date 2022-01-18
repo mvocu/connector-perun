@@ -1,23 +1,79 @@
 package cz.metacentrum.perun.polygon.connector;
 
 import java.util.LinkedHashSet;
+import java.util.List;
 
+import org.identityconnectors.framework.common.objects.AttributeBuilder;
 import org.identityconnectors.framework.common.objects.AttributeInfoBuilder;
+import org.identityconnectors.framework.common.objects.ConnectorObjectBuilder;
 import org.identityconnectors.framework.common.objects.Name;
+import org.identityconnectors.framework.common.objects.ObjectClass;
 import org.identityconnectors.framework.common.objects.ObjectClassInfoBuilder;
 import org.identityconnectors.framework.common.objects.Uid;
 
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
+import cz.metacentrum.perun.polygon.connector.rpc.model.Attribute;
+import cz.metacentrum.perun.polygon.connector.rpc.model.RichGroup;
 
 public class GroupSchemaAdapter extends SchemaAdapterBase implements SchemaAdapter {
 
-	public static final String NS_GROUP_ATTR = "urn:perun:group:attribute-def";
-	public static final String NS_GROUP_ATTR_DEF = "urn:perun:group:attribute-def:def";
-	public static final String NS_GROUP_ATTR_OPT = "urn:perun:group:attribute-def:opt";
-	public static final String NS_GROUP_ATTR_CORE = "urn:perun:group:attribute-def:core";
-	public static final String NS_GROUP_ATTR_VIRT = "urn:perun:group:attribute-def:virt";
+	private static final String NS_GROUP_ATTR = "urn:perun:group:attribute-def";
+	private static final String NS_GROUP_ATTR_DEF = "urn:perun:group:attribute-def:def";
+	private static final String NS_GROUP_ATTR_OPT = "urn:perun:group:attribute-def:opt";
+	private static final String NS_GROUP_ATTR_CORE = "urn:perun:group:attribute-def:core";
+	private static final String NS_GROUP_ATTR_VIRT = "urn:perun:group:attribute-def:virt";
 
+	private static final String OBJECTCLASS_NAME = "Group";
+	
 	private LinkedHashSet<String> attrNames = null;
+
+	public class GroupInfoObject {
+		public RichGroup 	group;
+		public List<Integer> 	includedInGroups;
+		public String		voName;
+		
+		public GroupInfoObject(String voName, RichGroup group, List<Integer> includedInGroups) {
+			super();
+			this.voName = voName;
+			this.group = group;
+			this.includedInGroups = includedInGroups;
+		}
+		
+		public GroupInfoObject(String voName, RichGroup group) {
+			super();
+			this.voName = voName;
+			this.group = group;
+		}
+
+		public String getVoName() {
+			return voName;
+		}
+
+		public void setVoName(String voName) {
+			this.voName = voName;
+		}
+
+		public RichGroup getGroup() {
+			return group;
+		}
+
+		public void setGroup(RichGroup group) {
+			this.group = group;
+		}
+
+		public Integer getParentGroupId() {
+			return this.group.getParentGroupId();
+		}
+
+		public List<Integer> getIncludedInGroups() {
+			return includedInGroups;
+		}
+
+		public void setIncludedInGroups(List<Integer> includedInGroups) {
+			this.includedInGroups = includedInGroups;
+		}
+		
+	}
 
 	public GroupSchemaAdapter(PerunRPC perun) {
 		super(perun);
@@ -27,9 +83,11 @@ public class GroupSchemaAdapter extends SchemaAdapterBase implements SchemaAdapt
 	@Override
 	public ObjectClassInfoBuilder getObjectClass() {
 
+		attrNames.clear();
+		
 		// ----------------  Group object class -----------------
 		ObjectClassInfoBuilder group = new ObjectClassInfoBuilder();
-		group.setType("Group");
+		group.setType(OBJECTCLASS_NAME);
 
 		// remap __UID__ attribute
 		AttributeInfoBuilder uid = new AttributeInfoBuilder(Uid.NAME, String.class);
@@ -73,4 +131,37 @@ public class GroupSchemaAdapter extends SchemaAdapterBase implements SchemaAdapt
 		return group;
 	}
 
+	@Override
+	public String getObjectClassName() {
+		return OBJECTCLASS_NAME;
+	}
+
+	@Override
+	public ConnectorObjectBuilder mapObject(ObjectClass objectClass, Object source) {
+		GroupInfoObject group_info = (GroupInfoObject)source;
+		ConnectorObjectBuilder out = new ConnectorObjectBuilder();
+		out.setObjectClass(objectClass);
+		out.setName(group_info.getVoName() + ":" + group_info.getGroup().getName());
+		out.setUid(group_info.getGroup().getId().toString());
+		// -- manually mapped attributes:
+		// group_parent_group_id
+		AttributeBuilder ab = new AttributeBuilder();
+		ab.setName("group_parent_group_id");
+		ab.addValue(group_info.getParentGroupId());
+		out.addAttribute(ab.build());
+		// group_included_in_group_id
+		ab = new AttributeBuilder();
+		ab.setName("group_included_in_group_id");
+		ab.addValue(group_info.getIncludedInGroups());
+		out.addAttribute(ab.build());
+		// defined group attributes
+		if(group_info.getGroup().getAttributes() != null) {
+			for(Attribute attr: group_info.getGroup().getAttributes()) {
+				out.addAttribute(mapAttribute(attr));
+			}
+		}
+		return out;
+	}
+
 }
+

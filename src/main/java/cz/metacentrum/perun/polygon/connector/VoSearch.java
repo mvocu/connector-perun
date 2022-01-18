@@ -23,8 +23,8 @@ public class VoSearch extends ObjectSearchBase implements ObjectSearch {
 
 	private static final Log LOG = Log.getLog(VoSearch.class);
 
-	public VoSearch(ObjectClass objectClass, PerunRPC perun) {
-		super(objectClass, perun);
+	public VoSearch(ObjectClass objectClass, SchemaAdapter adapter, PerunRPC perun) {
+		super(objectClass, adapter, perun);
 	}
 
 	@Override
@@ -93,14 +93,7 @@ public class VoSearch extends ObjectSearchBase implements ObjectSearch {
 	}
 
 	private void mapResult(Vo vo, ResultsHandler handler) {
-		ConnectorObjectBuilder out = new ConnectorObjectBuilder();
-		out.setObjectClass(objectClass);
-		out.setName(vo.getShortName());
-		out.setUid(vo.getId().toString());
-		List<Attribute> attrs = perun.getAttributesManager().getVoAttributes(vo.getId());
-		for(Attribute attr: attrs) {
-			out.addAttribute(createAttribute(attr));
-		}
+		ConnectorObjectBuilder out = schemaAdapter.mapObject(objectClass, vo);
 		handler.handle(out.build());
 	}
 	

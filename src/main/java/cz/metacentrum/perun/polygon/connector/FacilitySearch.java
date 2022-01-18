@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.identityconnectors.common.logging.Log;
 import org.identityconnectors.framework.common.objects.AttributeUtil;
-import org.identityconnectors.framework.common.objects.ConnectorObjectBuilder;
 import org.identityconnectors.framework.common.objects.ObjectClass;
 import org.identityconnectors.framework.common.objects.OperationOptions;
 import org.identityconnectors.framework.common.objects.ResultsHandler;
@@ -16,15 +15,14 @@ import org.identityconnectors.framework.common.objects.filter.Filter;
 import org.identityconnectors.framework.spi.SearchResultsHandler;
 
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
-import cz.metacentrum.perun.polygon.connector.rpc.model.Attribute;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Facility;
 
 public class FacilitySearch extends ObjectSearchBase implements ObjectSearch {
 
 	private static final Log LOG = Log.getLog(FacilitySearch.class);
 
-	public FacilitySearch(ObjectClass objectClass, PerunRPC perun) {
-		super(objectClass, perun);
+	public FacilitySearch(ObjectClass objectClass, SchemaAdapter adapter, PerunRPC perun) {
+		super(objectClass, adapter, perun);
 	}
 
 	@Override
@@ -94,21 +92,7 @@ public class FacilitySearch extends ObjectSearchBase implements ObjectSearch {
 	}
 
 	private void mapResult(Facility facility, ResultsHandler handler) {
-		ConnectorObjectBuilder out = new ConnectorObjectBuilder();
-		out.setObjectClass(objectClass);
-		out.setName(mapName(facility));
-		out.setUid(facility.getId().toString());
-		List<Attribute> attributes = perun.getAttributesManager().getFacilityAttributes(facility.getId());
-		if(!attributes.isEmpty()) {
-			for(Attribute attr: attributes) {
-				out.addAttribute(createAttribute(attr));
-			}
-		}
-		handler.handle(out.build());
+		handler.handle(schemaAdapter.mapObject(objectClass, facility).build());
 	}
 
-	private String mapName(Facility facility) {
-		return facility.getName();
-	}
-	
 }

@@ -16,7 +16,9 @@
 package cz.metacentrum.perun.polygon.connector;
 
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.identityconnectors.common.logging.Log;
 import org.identityconnectors.common.security.GuardedString;
@@ -46,13 +48,15 @@ import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
  */
 @ConnectorClass(displayNameKey = "cz.metacentrum.perun.polygon.connector", configurationClass = PerunRPCConfiguration.class)
 public class PerunRPCConnector 
-implements PoolableConnector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp
+implements PoolableConnector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp, SchemaManager
 {
 	private static final Log LOG = Log.getLog(PerunRPCConnector.class);
 	
 	private PerunRPCConfiguration configuration = null;
 	
 	private PerunRPC perun = null;
+	
+	private Map<String, SchemaAdapter> mapObjectClassToSchemaAdapter = null;
 	
 	@Override
 	public void test() {
@@ -64,14 +68,9 @@ implements PoolableConnector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp
 		
 		SchemaBuilder schemaBuilder = new SchemaBuilder(PerunRPCConnector.class);
 
-		schemaBuilder.defineObjectClass((new ExtSourceSchemaAdapter(perun)).getObjectClass().build());
-		schemaBuilder.defineObjectClass((new UserSchemaAdapter(perun)).getObjectClass().build());
-		schemaBuilder.defineObjectClass((new UserExtSchemaAdapter(perun)).getObjectClass().build());
-		schemaBuilder.defineObjectClass((new VoSchemaAdapter(perun)).getObjectClass().build());
-		schemaBuilder.defineObjectClass((new VoMemberSchemaAdapter(perun)).getObjectClass().build());
-		schemaBuilder.defineObjectClass((new GroupSchemaAdapter(perun)).getObjectClass().build());
-		schemaBuilder.defineObjectClass((new FacilitySchemaAdapter(perun)).getObjectClass().build());
-		schemaBuilder.defineObjectClass((new GroupMemberSchemaAdapter(perun)).getObjectClass().build());
+		mapObjectClassToSchemaAdapter.values().forEach(adapter -> {
+			schemaBuilder.defineObjectClass(adapter.getObjectClass().build());
+		});
 		
 		schemaBuilder.defineOperationOption(OperationOptionInfoBuilder.buildPageSize(), SearchOp.class);
 		schemaBuilder.defineOperationOption(OperationOptionInfoBuilder.buildPagedResultsOffset(), SearchOp.class);
@@ -101,6 +100,8 @@ implements PoolableConnector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp
 	        		configuration.getPerunUsername(),
 	        		passwordArray[0]
 	        		);
+
+	        initSchemaAdapters();
 	}
 
 	@Override
@@ -129,45 +130,8 @@ implements PoolableConnector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp
 	@Override
 	public void executeQuery(ObjectClass objectClass, Filter query, ResultsHandler handler, OperationOptions options) {
 
-		ObjectSearch search = null;
+		ObjectSearch search = getSearchForObjectClass(objectClass, getSchemaAdapterForObjectClass(objectClass));
 		
-		switch(objectClass.getObjectClassValue()) {
-
-		case "ExtSource":
-			search = new ExtSourceSearch(objectClass, perun);
-			break;
-			
-		case "User":
-			search = new UserSearch(objectClass, perun, configuration.getPerunNamespace());
-			break;
-
-		case "UserExtSource":
-			search = new UserExtSearch(objectClass, perun);
-			break;
-			
-		case "VirtualOrganization":
-			search = new VoSearch(objectClass, perun);
-			break;
-			
-		case "Group":
-			search = new GroupSearch(objectClass, perun);
-			break;
-			
-		case "GroupMember":
-			search = new GroupMemberSearch(objectClass, perun);
-			break;
-			
-		case "VoMember":
-			search = new VoMemberSearch(objectClass, perun);
-			break;
-			
-		case "Facility":
-			search = new FacilitySearch(objectClass, perun);
-			break;
-			
-		default:
-			break;
-		}
 		if(search != null) {
 			search.executeQuery(query, options, handler);
 		}
@@ -177,14 +141,79 @@ implements PoolableConnector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp
 
 	@Override
 	public void sync(ObjectClass objectClass, SyncToken token, SyncResultsHandler handler, OperationOptions options) {
-		SyncStrategy strategy = new AuditlogSyncStrategy(perun);
+		SyncStrategy strategy = new AuditlogSyncStrategy(this, perun, configuration.getPerunConsumerName());
 		strategy.sync(objectClass, token, handler, options);
 	}
 
 	@Override
 	public SyncToken getLatestSyncToken(ObjectClass objectClass) {
-		SyncStrategy strategy = new AuditlogSyncStrategy(perun);
+		SyncStrategy strategy = new AuditlogSyncStrategy(this, perun, configuration.getPerunConsumerName());
 		return strategy.getLatestSyncToken(objectClass);
 	}
 
+	private void initSchemaAdapters() {
+		List<SchemaAdapter> adapters = Arrays.asList(
+				new ExtSourceSchemaAdapter(perun),
+				new UserSchemaAdapter(perun, configuration.getPerunNamespace()),
+				new UserExtSchemaAdapter(perun),
+				new VoSchemaAdapter(perun),
+				new VoMemberSchemaAdapter(perun),
+				new GroupSchemaAdapter(perun),
+				new FacilitySchemaAdapter(perun),
+				new GroupMemberSchemaAdapter(perun)
+				);
+		mapObjectClassToSchemaAdapter = new LinkedHashMap<>(); 
+		adapters.stream().forEach(adapter -> { 
+			mapObjectClassToSchemaAdapter.put(adapter.getObjectClassName(), adapter);
+		});
+	}
+	
+	@Override
+	public SchemaAdapter getSchemaAdapterForObjectClass(ObjectClass objectClass) {
+		return mapObjectClassToSchemaAdapter.get(objectClass.getObjectClassValue());
+	}
+	
+	private ObjectSearch getSearchForObjectClass(ObjectClass objectClass, SchemaAdapter adapter) {
+		ObjectSearch search = null;
+		
+		switch(objectClass.getObjectClassValue()) {
+
+		case "ExtSource":
+			search = new ExtSourceSearch(objectClass, adapter, perun);
+			break;
+			
+		case "User":
+			search = new UserSearch(objectClass, adapter, perun);
+			break;
+
+		case "UserExtSource":
+			search = new UserExtSearch(objectClass, adapter, perun);
+			break;
+			
+		case "VirtualOrganization":
+			search = new VoSearch(objectClass, adapter, perun);
+			break;
+			
+		case "Group":
+			search = new GroupSearch(objectClass, adapter, perun);
+			break;
+			
+		case "GroupMember":
+			search = new GroupMemberSearch(objectClass, adapter, perun);
+			break;
+			
+		case "VoMember":
+			search = new VoMemberSearch(objectClass, adapter, perun);
+			break;
+			
+		case "Facility":
+			search = new FacilitySearch(objectClass, adapter, perun);
+			break;
+			
+		default:
+			break;
+		}
+
+		return search;
+	}
 }

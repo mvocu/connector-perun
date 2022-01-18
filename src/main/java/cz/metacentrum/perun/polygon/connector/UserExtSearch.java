@@ -3,10 +3,8 @@ package cz.metacentrum.perun.polygon.connector;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.identityconnectors.common.logging.Log;
-import org.identityconnectors.framework.common.objects.AttributeBuilder;
 import org.identityconnectors.framework.common.objects.AttributeUtil;
 import org.identityconnectors.framework.common.objects.ConnectorObjectBuilder;
 import org.identityconnectors.framework.common.objects.ObjectClass;
@@ -20,8 +18,6 @@ import org.identityconnectors.framework.common.objects.filter.Filter;
 import org.identityconnectors.framework.spi.SearchResultsHandler;
 
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
-import cz.metacentrum.perun.polygon.connector.rpc.model.Attribute;
-import cz.metacentrum.perun.polygon.connector.rpc.model.RichUser;
 import cz.metacentrum.perun.polygon.connector.rpc.model.User;
 import cz.metacentrum.perun.polygon.connector.rpc.model.UserExtSource;
 
@@ -29,8 +25,8 @@ public class UserExtSearch extends ObjectSearchBase implements ObjectSearch {
 
 	private static final Log LOG = Log.getLog(UserExtSearch.class);
 
-	public UserExtSearch(ObjectClass objectClass, PerunRPC perun) {
-		super(objectClass, perun);
+	public UserExtSearch(ObjectClass objectClass, SchemaAdapter adapter, PerunRPC perun) {
+		super(objectClass, adapter, perun);
 	}
 
 	@Override
@@ -106,27 +102,7 @@ public class UserExtSearch extends ObjectSearchBase implements ObjectSearch {
 	}
 
 	private void mapResult(UserExtSource userExtSource, ResultsHandler handler) {
-		ConnectorObjectBuilder out = new ConnectorObjectBuilder();
-		out.setObjectClass(objectClass);
-		out.setName(userExtSource.getUserId().toString() + ":" + userExtSource.getExtSource().getId().toString());
-		out.setUid(userExtSource.getId().toString());
-		// ues_login
-		AttributeBuilder ab = new AttributeBuilder();
-		ab.setName("ues_login");
-		ab.addValue(userExtSource.getLogin());
-		out.addAttribute(ab.build());
-		// ues_loa
-		ab = new AttributeBuilder();
-		ab.setName("ues_loa");
-		ab.addValue(userExtSource.getLoa());
-		out.addAttribute(ab.build());
-		// defined attributes
-		List<Attribute> attrs = perun.getAttributesManager().getUserExtSourceAttributes(userExtSource.getId());
-		if(attrs != null) {
-			for(Attribute attr: attrs) {
-				out.addAttribute(createAttribute(attr));
-			}
-		}
+		ConnectorObjectBuilder out = schemaAdapter.mapObject(objectClass, userExtSource);
 		handler.handle(out.build());
 	}
 

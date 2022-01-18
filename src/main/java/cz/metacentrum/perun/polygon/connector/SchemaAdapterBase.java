@@ -1,9 +1,14 @@
 package cz.metacentrum.perun.polygon.connector;
 
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.Set;
 
 import org.identityconnectors.common.logging.Log;
+import org.identityconnectors.framework.common.objects.AttributeBuilder;
 import org.identityconnectors.framework.common.objects.AttributeInfoBuilder;
+import org.identityconnectors.framework.common.objects.ConnectorObjectBuilder;
+import org.identityconnectors.framework.common.objects.ObjectClass;
 import org.identityconnectors.framework.common.objects.ObjectClassInfoBuilder;
 
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
@@ -22,6 +27,12 @@ public abstract class SchemaAdapterBase implements SchemaAdapter {
 
 	@Override
 	public abstract ObjectClassInfoBuilder getObjectClass();
+	
+	@Override
+	public abstract String getObjectClassName();
+	
+	@Override
+	public abstract ConnectorObjectBuilder mapObject(ObjectClass objectClass, Object source);
 
 	public static String mapPerunNamespace(String name) {
 		if(name == null || name.isEmpty()) {
@@ -63,12 +74,12 @@ public abstract class SchemaAdapterBase implements SchemaAdapter {
 				continue;
 			}
 			presentNames.add(attrName);
-			object.addAttributeInfo(createAttribute(attrName, attrDef).build());
+			object.addAttributeInfo(createAttributeInfo(attrName, attrDef).build());
 		}
 		
 	}
 	
-	protected AttributeInfoBuilder createAttribute(String name, AttributeDefinition attrDef) {
+	protected AttributeInfoBuilder createAttributeInfo(String name, AttributeDefinition attrDef) {
 		AttributeInfoBuilder attr = new AttributeInfoBuilder(name);
 		attr.setType(mapClass(attrDef.getType()));
 		attr.setNativeName(attrDef.getNamespace() + ":" + attrDef.getBaseFriendlyName());
@@ -80,6 +91,29 @@ public abstract class SchemaAdapterBase implements SchemaAdapter {
 		return attr;
 	}
 	
+	@Override
+	public org.identityconnectors.framework.common.objects.Attribute mapAttribute(cz.metacentrum.perun.polygon.connector.rpc.model.Attribute attr) {
+		AttributeBuilder ab = new AttributeBuilder();
+		ab.setName(SchemaAdapterBase.getAttributeName(attr));
+		switch(attr.getType()) {
+		case "java.util.ArrayList":
+			try {
+				ab.addValue((Collection<?>)Class.forName(attr.getType()).cast(attr.getValue()));
+			} catch (ClassNotFoundException e) {
+				LOG.error("Type {0} of attribute {1} is unknown", attr.getType(), attr.getFriendlyName());
+			}
+			break;
+		case "java.util.LinkedHashMap":
+			// TODO implement conversion from map
+			ab.addValue(((LinkedHashMap<?,?>)attr.getValue()).toString());
+			break;
+		default:
+			ab.addValue(attr.getValue());
+			break;
+		}
+		return ab.build();
+	}
+
 	protected Class<?> mapClass(String name) {
 		switch(name) {
 		case "java.util.ArrayList":

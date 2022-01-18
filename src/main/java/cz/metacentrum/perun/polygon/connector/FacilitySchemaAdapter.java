@@ -1,13 +1,18 @@
 package cz.metacentrum.perun.polygon.connector;
 
 import java.util.LinkedHashSet;
+import java.util.List;
 
 import org.identityconnectors.framework.common.objects.AttributeInfoBuilder;
+import org.identityconnectors.framework.common.objects.ConnectorObjectBuilder;
 import org.identityconnectors.framework.common.objects.Name;
+import org.identityconnectors.framework.common.objects.ObjectClass;
 import org.identityconnectors.framework.common.objects.ObjectClassInfoBuilder;
 import org.identityconnectors.framework.common.objects.Uid;
 
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
+import cz.metacentrum.perun.polygon.connector.rpc.model.Attribute;
+import cz.metacentrum.perun.polygon.connector.rpc.model.Facility;
 
 public class FacilitySchemaAdapter extends SchemaAdapterBase implements SchemaAdapter {
 
@@ -17,7 +22,8 @@ public class FacilitySchemaAdapter extends SchemaAdapterBase implements SchemaAd
 	public static final String NS_FACILITY_ATTR_CORE = "urn:perun:facility:attribute-def:core";
 	public static final String NS_FACILITY_ATTR_VIRT = "urn:perun:facility:attribute-def:virt";
 
-
+	public static final String OBJECTCLASS_NAME = "Facility";
+	
 	private LinkedHashSet<String> attrNames = null;
 
 	public FacilitySchemaAdapter(PerunRPC perun) {
@@ -28,9 +34,11 @@ public class FacilitySchemaAdapter extends SchemaAdapterBase implements SchemaAd
 	@Override
 	public ObjectClassInfoBuilder getObjectClass() {
 
+		attrNames.clear();
+		
 		// ----------------  Facility object class -----------------
 		ObjectClassInfoBuilder facility = new ObjectClassInfoBuilder();
-		facility.setType("Facility");
+		facility.setType(OBJECTCLASS_NAME);
 
 		// remap __UID__ attribute
 		AttributeInfoBuilder uid = new AttributeInfoBuilder(Uid.NAME, String.class);
@@ -56,4 +64,28 @@ public class FacilitySchemaAdapter extends SchemaAdapterBase implements SchemaAd
 		return facility;
 	}
 
+	@Override
+	public String getObjectClassName() {
+		return OBJECTCLASS_NAME;
+	}
+
+	@Override
+	public ConnectorObjectBuilder mapObject(ObjectClass objectClass, Object source) {
+		Facility facility = (Facility)source;
+		ConnectorObjectBuilder out = new ConnectorObjectBuilder();
+		out.setObjectClass(objectClass);
+		out.setName(mapName(facility));
+		out.setUid(facility.getId().toString());
+		List<Attribute> attributes = perun.getAttributesManager().getFacilityAttributes(facility.getId());
+		if(!attributes.isEmpty()) {
+			for(Attribute attr: attributes) {
+				out.addAttribute(mapAttribute(attr));
+			}
+		}
+		return out;
+	}
+
+	private String mapName(Facility facility) {
+		return facility.getName();
+	}
 }

@@ -1,12 +1,9 @@
 package cz.metacentrum.perun.polygon.connector;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
-import org.identityconnectors.common.Pair;
 import org.identityconnectors.common.logging.Log;
-import org.identityconnectors.framework.common.objects.AttributeBuilder;
 import org.identityconnectors.framework.common.objects.AttributeUtil;
 import org.identityconnectors.framework.common.objects.ConnectorObjectBuilder;
 import org.identityconnectors.framework.common.objects.ObjectClass;
@@ -24,14 +21,13 @@ import cz.metacentrum.perun.polygon.connector.rpc.model.Attribute;
 import cz.metacentrum.perun.polygon.connector.rpc.model.GroupMemberData;
 import cz.metacentrum.perun.polygon.connector.rpc.model.GroupMemberRelation;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Member;
-import cz.metacentrum.perun.polygon.connector.rpc.model.SimpleAttribute;
 
 public class GroupMemberSearch extends ObjectSearchBase implements ObjectSearch {
 
 	private static final Log LOG = Log.getLog(GroupMemberSearch.class);
 	
-	public GroupMemberSearch(ObjectClass objectClass, PerunRPC perun) {
-		super(objectClass, perun);
+	public GroupMemberSearch(ObjectClass objectClass, SchemaAdapter adapter, PerunRPC perun) {
+		super(objectClass, adapter, perun);
 	}
 
 	@Override
@@ -103,9 +99,15 @@ public class GroupMemberSearch extends ObjectSearchBase implements ObjectSearch 
 		}
 		LOG.info("Query returned {0} members", members.size());
 		for(GroupMemberRelation member : members) {
-			mapResult(member, 
-				groupsMembers.getGroupMemberAttributes().get(member.getG().toString()).get(member.getM().toString()), 
-				handler);
+			Map<String, Map<String, List<Attribute>>> attrsMap = groupsMembers.getGroupMemberAttributes();
+			List<Attribute> attrs = null;
+			if(attrsMap != null) {
+				Map<String, List<Attribute>> groupAttrsMap = attrsMap.get(member.getG().toString());
+				if(groupAttrsMap != null) {
+					attrs = groupAttrsMap.get(member.getM().toString());
+				}
+			}
+			mapResult(member, attrs, handler);
 		}
 		SearchResult result = new SearchResult(
 				 pageResultsCookie, 	/* cookie */ 
@@ -116,45 +118,14 @@ public class GroupMemberSearch extends ObjectSearchBase implements ObjectSearch 
 	}
 
 	private void mapResult(GroupMemberRelation member, List<Attribute> attrs, ResultsHandler handler) {
-		Integer groupId = member.getG();
-		ConnectorObjectBuilder out = new ConnectorObjectBuilder();
-		out.setObjectClass(objectClass);
-		String name = groupId.toString() + ":" + member.getM();
-		out.setName(name);
-		out.setUid(name);
+		ConnectorObjectBuilder out = schemaAdapter.mapObject(objectClass, member);
 
-		// -- manually mapped attributes:
-		// member_group_group_id
-		AttributeBuilder ab = new AttributeBuilder();
-		ab.setName("member_group_group_id");
-		ab.addValue(groupId);
-		out.addAttribute(ab.build());
-		// member_group_member_id
-		ab = new AttributeBuilder();
-		ab.setName("member_group_member_id");
-		ab.addValue(member.getM());
-		out.addAttribute(ab.build());
-		// member_group_membership_type
-		ab = new AttributeBuilder();
-		ab.setName("member_group_membership_type");
-		ab.addValue(member.getT());
-		out.addAttribute(ab.build());
-		// member_group_source_group_id
-		ab = new AttributeBuilder();
-		ab.setName("member_group_source_group_id");
-		ab.addValue(member.getSg());
-		out.addAttribute(ab.build());
-		// member_group_source_group_status
-		ab = new AttributeBuilder();
-		ab.setName("member_group_source_group_status");
-		ab.addValue(member.getS());
-		out.addAttribute(ab.build());
-		
 		if(attrs != null) {
 			for(Attribute attr: attrs) {
-				out.addAttribute(createAttribute(attr));
+				out.addAttribute(schemaAdapter.mapAttribute(attr));
 			}
 		}
+		
 		handler.handle(out.build());
 	}
 

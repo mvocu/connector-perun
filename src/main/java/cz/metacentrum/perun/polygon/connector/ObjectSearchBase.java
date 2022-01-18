@@ -37,10 +37,12 @@ public abstract class ObjectSearchBase implements ObjectSearch {
 
 	protected PerunRPC perun;
 	protected ObjectClass objectClass;
+	protected SchemaAdapter schemaAdapter;
 	
-	public ObjectSearchBase(ObjectClass objectClass, PerunRPC perun) {
-		this.perun = perun;
+	public ObjectSearchBase(ObjectClass objectClass, SchemaAdapter schemaAdapter, PerunRPC perun) {
 		this.objectClass = objectClass;
+		this.schemaAdapter = schemaAdapter;
+		this.perun = perun;
 	}
 	
 	private class SQLFilterVisitor implements FilterVisitor<String, Map<String, Object>> {
@@ -197,27 +199,5 @@ public abstract class ObjectSearchBase implements ObjectSearch {
 		SQLFilterVisitor visitor = new SQLFilterVisitor();
 		query = filter.accept(visitor, params);
 		return query;
-	}
-
-	protected Attribute createAttribute(cz.metacentrum.perun.polygon.connector.rpc.model.Attribute attr) {
-		AttributeBuilder ab = new AttributeBuilder();
-		ab.setName(SchemaAdapterBase.getAttributeName(attr));
-		switch(attr.getType()) {
-		case "java.util.ArrayList":
-			try {
-				ab.addValue((Collection<?>)Class.forName(attr.getType()).cast(attr.getValue()));
-			} catch (ClassNotFoundException e) {
-				LOG.error("Type {0} of attribute {1} is unknown", attr.getType(), attr.getFriendlyName());
-			}
-			break;
-		case "java.util.LinkedHashMap":
-			// TODO implement conversion from map
-			ab.addValue(((LinkedHashMap<?,?>)attr.getValue()).toString());
-			break;
-		default:
-			ab.addValue(attr.getValue());
-			break;
-		}
-		return ab.build();
 	}
 }

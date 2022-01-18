@@ -1,12 +1,9 @@
 package cz.metacentrum.perun.polygon.connector;
 
-import java.util.Arrays;
 import java.util.List;
 
 import org.identityconnectors.common.logging.Log;
-import org.identityconnectors.framework.common.objects.AttributeBuilder;
 import org.identityconnectors.framework.common.objects.AttributeUtil;
-import org.identityconnectors.framework.common.objects.ConnectorObjectBuilder;
 import org.identityconnectors.framework.common.objects.ObjectClass;
 import org.identityconnectors.framework.common.objects.OperationOptions;
 import org.identityconnectors.framework.common.objects.ResultsHandler;
@@ -19,15 +16,13 @@ import org.identityconnectors.framework.spi.SearchResultsHandler;
 
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
 import cz.metacentrum.perun.polygon.connector.rpc.model.ExtSource;
-import cz.metacentrum.perun.polygon.connector.rpc.model.User;
-import cz.metacentrum.perun.polygon.connector.rpc.model.UserExtSource;
 
 public class ExtSourceSearch extends ObjectSearchBase implements ObjectSearch {
 
 	private static final Log LOG = Log.getLog(ExtSourceSearch.class);
 
-	public ExtSourceSearch(ObjectClass objectClass, PerunRPC perun) {
-		super(objectClass, perun);
+	public ExtSourceSearch(ObjectClass objectClass, SchemaAdapter schemaAdapter, PerunRPC perun) {
+		super(objectClass, schemaAdapter, perun);
 	}
 
 	@Override
@@ -99,17 +94,7 @@ public class ExtSourceSearch extends ObjectSearchBase implements ObjectSearch {
 	}
 
 	private void mapResult(ExtSource es, ResultsHandler handler) {
-		ConnectorObjectBuilder out = new ConnectorObjectBuilder();
-		out.setObjectClass(objectClass);
-		out.setName(es.getName());
-		out.setUid(es.getId().toString());
-		// es_type
-		AttributeBuilder ab = new AttributeBuilder();
-		ab.setName("es_type");
-		ab.addValue(es.getType());
-		out.addAttribute(ab.build());
-
-		handler.handle(out.build());
+		handler.handle(schemaAdapter.mapObject(objectClass, es).build());
 	}
 
 }

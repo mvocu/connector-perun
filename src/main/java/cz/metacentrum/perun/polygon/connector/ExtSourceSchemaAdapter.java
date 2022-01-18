@@ -1,18 +1,22 @@
 package cz.metacentrum.perun.polygon.connector;
 
-import java.util.LinkedHashSet;
-
+import org.identityconnectors.framework.common.objects.AttributeBuilder;
 import org.identityconnectors.framework.common.objects.AttributeInfoBuilder;
+import org.identityconnectors.framework.common.objects.ConnectorObjectBuilder;
 import org.identityconnectors.framework.common.objects.Name;
+import org.identityconnectors.framework.common.objects.ObjectClass;
 import org.identityconnectors.framework.common.objects.ObjectClassInfoBuilder;
 import org.identityconnectors.framework.common.objects.Uid;
 
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
+import cz.metacentrum.perun.polygon.connector.rpc.model.ExtSource;
 
 public class ExtSourceSchemaAdapter extends SchemaAdapterBase implements SchemaAdapter {
 
 	//private LinkedHashSet<String> attrNames = null;
 
+	private static final String OBJECTCLASS_NAME = "ExtSource";
+	
 	public ExtSourceSchemaAdapter(PerunRPC perun) {
 		super(perun);
 		//attrNames = new LinkedHashSet<>();
@@ -20,9 +24,10 @@ public class ExtSourceSchemaAdapter extends SchemaAdapterBase implements SchemaA
 
 	@Override
 	public ObjectClassInfoBuilder getObjectClass() {
+
 		// ----------------  extSourceExtSource object class -----------------
 		ObjectClassInfoBuilder extSource = new ObjectClassInfoBuilder();
-		extSource.setType("ExtSource");
+		extSource.setType(OBJECTCLASS_NAME);
 		//extSource.setAuxiliary(true);
 
 		// remap __UID__ attribute
@@ -57,6 +62,27 @@ public class ExtSourceSchemaAdapter extends SchemaAdapterBase implements SchemaA
 		
 		return extSource;
 		
+	}
+
+	@Override
+	public String getObjectClassName() {
+		return OBJECTCLASS_NAME;
+	}
+	
+	@Override
+	public ConnectorObjectBuilder mapObject(ObjectClass objectClass, Object source) {
+		ExtSource es = (ExtSource)source;
+		ConnectorObjectBuilder out = new ConnectorObjectBuilder();
+		out.setObjectClass(objectClass);
+		out.setName(es.getName());
+		out.setUid(es.getId().toString());
+		// es_type
+		AttributeBuilder ab = new AttributeBuilder();
+		ab.setName("es_type");
+		ab.addValue(es.getType());
+		out.addAttribute(ab.build());
+		
+		return out;
 	}
 
 }

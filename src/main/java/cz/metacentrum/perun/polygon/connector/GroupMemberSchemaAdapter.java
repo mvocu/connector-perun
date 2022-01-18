@@ -2,20 +2,27 @@ package cz.metacentrum.perun.polygon.connector;
 
 import java.util.LinkedHashSet;
 
+import org.identityconnectors.framework.common.objects.AttributeBuilder;
 import org.identityconnectors.framework.common.objects.AttributeInfoBuilder;
+import org.identityconnectors.framework.common.objects.ConnectorObjectBuilder;
 import org.identityconnectors.framework.common.objects.Name;
+import org.identityconnectors.framework.common.objects.ObjectClass;
 import org.identityconnectors.framework.common.objects.ObjectClassInfoBuilder;
 import org.identityconnectors.framework.common.objects.Uid;
 
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
+import cz.metacentrum.perun.polygon.connector.rpc.model.Attribute;
+import cz.metacentrum.perun.polygon.connector.rpc.model.GroupMemberRelation;
 
 public class GroupMemberSchemaAdapter extends SchemaAdapterBase implements SchemaAdapter {
 
-	String NS_MEMBER_GROUP_ATTR = "urn:perun:member_group:attribute-def";
-	String NS_MEMBER_GROUP_ATTR_DEF = "urn:perun:member_group:attribute-def:def";
-	String NS_MEMBER_GROUP_ATTR_OPT = "urn:perun:member_group:attribute-def:opt";
-	String NS_MEMBER_GROUP_ATTR_VIRT = "urn:perun:member_group:attribute-def:virt";
+	private static final String NS_MEMBER_GROUP_ATTR = "urn:perun:member_group:attribute-def";
+	private static final String NS_MEMBER_GROUP_ATTR_DEF = "urn:perun:member_group:attribute-def:def";
+	private static final String NS_MEMBER_GROUP_ATTR_OPT = "urn:perun:member_group:attribute-def:opt";
+	private static final String NS_MEMBER_GROUP_ATTR_VIRT = "urn:perun:member_group:attribute-def:virt";
 
+	private static final String OBJECTCLASS_NAME = "GroupMember";
+	
 	private LinkedHashSet<String> attrNames = null;
 
 	public GroupMemberSchemaAdapter(PerunRPC perun) {
@@ -26,9 +33,11 @@ public class GroupMemberSchemaAdapter extends SchemaAdapterBase implements Schem
 	@Override
 	public ObjectClassInfoBuilder getObjectClass() {
 
+		attrNames.clear();
+		
 		// ----------------  GroupMember object class -----------------
 		ObjectClassInfoBuilder groupMember = new ObjectClassInfoBuilder();
-		groupMember.setType("GroupMember");
+		groupMember.setType(OBJECTCLASS_NAME);
 
 		// remap __UID__ attribute
 		AttributeInfoBuilder uid = new AttributeInfoBuilder(Uid.NAME, String.class);
@@ -97,6 +106,51 @@ public class GroupMemberSchemaAdapter extends SchemaAdapterBase implements Schem
 		addAttributesFromNamespace(groupMember, NS_MEMBER_GROUP_ATTR_OPT, attrNames);
 
 		return groupMember;
+	}
+
+	@Override
+	public String getObjectClassName() {
+		return OBJECTCLASS_NAME;
+	}
+
+	@Override
+	public ConnectorObjectBuilder mapObject(ObjectClass objectClass, Object source) {
+		GroupMemberRelation member = (GroupMemberRelation)source;
+		Integer groupId = member.getG();
+		ConnectorObjectBuilder out = new ConnectorObjectBuilder();
+		out.setObjectClass(objectClass);
+		String name = groupId.toString() + ":" + member.getM();
+		out.setName(name);
+		out.setUid(name);
+
+		// -- manually mapped attributes:
+		// member_group_group_id
+		AttributeBuilder ab = new AttributeBuilder();
+		ab.setName("member_group_group_id");
+		ab.addValue(groupId);
+		out.addAttribute(ab.build());
+		// member_group_member_id
+		ab = new AttributeBuilder();
+		ab.setName("member_group_member_id");
+		ab.addValue(member.getM());
+		out.addAttribute(ab.build());
+		// member_group_membership_type
+		ab = new AttributeBuilder();
+		ab.setName("member_group_membership_type");
+		ab.addValue(member.getT());
+		out.addAttribute(ab.build());
+		// member_group_source_group_id
+		ab = new AttributeBuilder();
+		ab.setName("member_group_source_group_id");
+		ab.addValue(member.getSg());
+		out.addAttribute(ab.build());
+		// member_group_source_group_status
+		ab = new AttributeBuilder();
+		ab.setName("member_group_source_group_status");
+		ab.addValue(member.getS());
+		out.addAttribute(ab.build());
+		
+		return out;
 	}
 
 }

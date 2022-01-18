@@ -33,6 +33,8 @@ public class PerunRPCConfiguration extends AbstractConfiguration {
 	
 	private String perunNamespace = null;
 	
+	private String perunConsumerName = null;
+	
 	@ConfigurationProperty(required = true, order = 1)
 	public String getPerunUrl() {
 		return perunUrl;
@@ -67,6 +69,15 @@ public class PerunRPCConfiguration extends AbstractConfiguration {
 
 	public void setPerunNamespace(String perunNamespace) {
 		this.perunNamespace = perunNamespace;
+	}
+
+	@ConfigurationProperty(required = true, order = 5)
+	public String getPerunConsumerName() {
+		return perunConsumerName;
+	}
+
+	public void setPerunConsumerName(String perunConsumerName) {
+		this.perunConsumerName = perunConsumerName;
 	}
 
 	@Override
