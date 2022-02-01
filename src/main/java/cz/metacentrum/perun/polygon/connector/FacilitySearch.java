@@ -16,6 +16,7 @@ import org.identityconnectors.framework.spi.SearchResultsHandler;
 
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Facility;
+import cz.metacentrum.perun.polygon.connector.rpc.model.PerunBean;
 
 public class FacilitySearch extends ObjectSearchBase implements ObjectSearch {
 
@@ -23,6 +24,15 @@ public class FacilitySearch extends ObjectSearchBase implements ObjectSearch {
 
 	public FacilitySearch(ObjectClass objectClass, SchemaAdapter adapter, PerunRPC perun) {
 		super(objectClass, adapter, perun);
+	}
+
+	@Override
+	public PerunBean readPerunBeanById(Integer id, Integer... ids) {
+		LOG.info("Reading facility with uid {0}", id);
+		Facility facility = perun.getFacilitiesManager().getFacilityById(Integer.valueOf(id));
+		LOG.info("Query returned {0} facility", facility.toString());
+		
+		return facility;
 	}
 
 	@Override
@@ -38,10 +48,7 @@ public class FacilitySearch extends ObjectSearchBase implements ObjectSearch {
 			if(((EqualsFilter)filter).getAttribute().is(Uid.NAME)) {
 				// read single object
 				String uid = (String)AttributeUtil.getSingleValue(((EqualsFilter)filter).getAttribute());
-				LOG.info("Reading facility with uid {0}", uid);
-				Facility facility = perun.getFacilitiesManager().getFacilityById(Integer.valueOf(uid));
-				LOG.info("Query returned {0} facility", facility.toString());
-				
+				Facility facility = (Facility)readPerunBeanById(Integer.valueOf(uid));
 				if(facility != null) {
 					mapResult(facility, handler);
 				}

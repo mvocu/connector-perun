@@ -22,7 +22,7 @@ public class UserSchemaAdapter extends SchemaAdapterBase {
 	private static final String NS_USER_ATTR_OPT = "urn:perun:user:attribute-def:opt";
 	private static final String NS_USER_ATTR_VIRT = "urn:perun:user:attribute-def:virt";
 
-	private static final String OBJECTCLASS_NAME = "User";
+	public static final String OBJECTCLASS_NAME = "User";
 	
 	private String namespace;
 	private LinkedHashSet<String> attrNames = null;

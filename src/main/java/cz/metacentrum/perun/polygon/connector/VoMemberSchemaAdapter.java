@@ -21,7 +21,7 @@ public class VoMemberSchemaAdapter extends SchemaAdapterBase implements SchemaAd
 	private static final String NS_MEMBER_ATTR_OPT = "urn:perun:member:attribute-def:opt";
 	private static final String NS_MEMBER_ATTR_VIRT = "urn:perun:member:attribute-def:virt";
 
-	private static final String OBJECTCLASS_NAME = "VoMember";
+	public static final String OBJECTCLASS_NAME = "VoMember";
 	
 	private LinkedHashSet<String> attrNames = null;
 

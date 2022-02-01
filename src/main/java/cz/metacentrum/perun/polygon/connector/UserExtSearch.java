@@ -18,6 +18,7 @@ import org.identityconnectors.framework.common.objects.filter.Filter;
 import org.identityconnectors.framework.spi.SearchResultsHandler;
 
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
+import cz.metacentrum.perun.polygon.connector.rpc.model.PerunBean;
 import cz.metacentrum.perun.polygon.connector.rpc.model.User;
 import cz.metacentrum.perun.polygon.connector.rpc.model.UserExtSource;
 
@@ -27,6 +28,17 @@ public class UserExtSearch extends ObjectSearchBase implements ObjectSearch {
 
 	public UserExtSearch(ObjectClass objectClass, SchemaAdapter adapter, PerunRPC perun) {
 		super(objectClass, adapter, perun);
+	}
+
+	@Override
+	public PerunBean readPerunBeanById(Integer id, Integer... ids) {
+		LOG.info("Reading user ext source with uid {0}", id);
+		List<UserExtSource> userExtSources = perun.getUsersManager().getUserExtSourcesByIds(Arrays.asList(id));
+		LOG.info("Query returned {0} user ext sources", userExtSources.size());
+		if(!userExtSources.isEmpty()) {
+			return userExtSources.get(0);
+		}
+		return null;
 	}
 
 	@Override
@@ -42,12 +54,9 @@ public class UserExtSearch extends ObjectSearchBase implements ObjectSearch {
 			if(((EqualsFilter)filter).getAttribute().is(Uid.NAME)) {
 				// read single object
 				String uid = (String)AttributeUtil.getSingleValue(((EqualsFilter)filter).getAttribute());
-				LOG.info("Reading user ext source with uid {0}", uid);
-				List<UserExtSource> userExtSources = perun.getUsersManager().getUserExtSourcesByIds(Arrays.asList(Integer.valueOf(uid)));
-				LOG.info("Query returned {0} user ext sources", userExtSources.size());
-				
-				if(!userExtSources.isEmpty()) {
-					mapResult(userExtSources.get(0), handler);
+				UserExtSource ues = (UserExtSource)readPerunBeanById(Integer.valueOf(uid));
+				if(ues != null) {
+					mapResult(ues, handler);
 				}
 				SearchResult result = new SearchResult(
 						 null, 	/* cookie */ 

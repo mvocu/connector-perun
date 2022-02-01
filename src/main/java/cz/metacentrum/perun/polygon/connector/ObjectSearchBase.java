@@ -30,6 +30,7 @@ import org.identityconnectors.framework.common.objects.filter.OrFilter;
 import org.identityconnectors.framework.common.objects.filter.StartsWithFilter;
 
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
+import cz.metacentrum.perun.polygon.connector.rpc.model.PerunBean;
 
 public abstract class ObjectSearchBase implements ObjectSearch {
 
@@ -192,6 +193,9 @@ public abstract class ObjectSearchBase implements ObjectSearch {
 	
 	@Override
 	public abstract void executeQuery(Filter filter, OperationOptions options, ResultsHandler handler);
+	
+	@Override
+	public abstract PerunBean readPerunBeanById(Integer id, Integer... ids); 
 	
 	protected String createSQLQuery(Filter filter, Map<String, String> attrMap) {
 		String query;

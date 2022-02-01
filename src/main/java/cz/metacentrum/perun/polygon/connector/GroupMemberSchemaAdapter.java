@@ -21,7 +21,7 @@ public class GroupMemberSchemaAdapter extends SchemaAdapterBase implements Schem
 	private static final String NS_MEMBER_GROUP_ATTR_OPT = "urn:perun:member_group:attribute-def:opt";
 	private static final String NS_MEMBER_GROUP_ATTR_VIRT = "urn:perun:member_group:attribute-def:virt";
 
-	private static final String OBJECTCLASS_NAME = "GroupMember";
+	public static final String OBJECTCLASS_NAME = "GroupMember";
 	
 	private LinkedHashSet<String> attrNames = null;
 

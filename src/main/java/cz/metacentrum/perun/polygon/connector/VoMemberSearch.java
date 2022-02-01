@@ -19,6 +19,7 @@ import org.identityconnectors.framework.spi.SearchResultsHandler;
 
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Member;
+import cz.metacentrum.perun.polygon.connector.rpc.model.PerunBean;
 import cz.metacentrum.perun.polygon.connector.rpc.model.RichMember;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Vo;
 
@@ -28,6 +29,13 @@ public class VoMemberSearch extends ObjectSearchBase implements ObjectSearch {
 	
 	public VoMemberSearch(ObjectClass objectClass, SchemaAdapter adapter, PerunRPC perun) {
 		super(objectClass, adapter, perun);
+	}
+
+	@Override
+	public PerunBean readPerunBeanById(Integer id, Integer... ids) {
+		LOG.info("Reading member with uid {0}", id);
+		RichMember member = perun.getMembersManager().getRichMemberWithAttributes(id);
+		return member;
 	}
 
 	@Override
@@ -43,9 +51,7 @@ public class VoMemberSearch extends ObjectSearchBase implements ObjectSearch {
 			if(((EqualsFilter)filter).getAttribute().is(Uid.NAME)) {
 				// read single object
 				String uid = (String)AttributeUtil.getSingleValue(((EqualsFilter)filter).getAttribute());
-				LOG.info("Reading member with uid {0}", uid);
-				RichMember member = perun.getMembersManager().getRichMemberWithAttributes(Integer.valueOf(uid));
-				
+				RichMember member = (RichMember)readPerunBeanById(Integer.valueOf(uid));
 				if(member != null) {
 					mapResult(member, handler);
 				}

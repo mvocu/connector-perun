@@ -16,6 +16,7 @@ import org.identityconnectors.framework.spi.SearchResultsHandler;
 
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
 import cz.metacentrum.perun.polygon.connector.rpc.model.ExtSource;
+import cz.metacentrum.perun.polygon.connector.rpc.model.PerunBean;
 
 public class ExtSourceSearch extends ObjectSearchBase implements ObjectSearch {
 
@@ -23,6 +24,15 @@ public class ExtSourceSearch extends ObjectSearchBase implements ObjectSearch {
 
 	public ExtSourceSearch(ObjectClass objectClass, SchemaAdapter schemaAdapter, PerunRPC perun) {
 		super(objectClass, schemaAdapter, perun);
+	}
+
+	@Override
+	public PerunBean readPerunBeanById(Integer id, Integer... ids) {
+		LOG.info("Reading ext source with uid {0}", id);
+		ExtSource es = perun.getExtSourcesManager().getExtSourceById(id);
+		LOG.info("Query returned {0} ext source", es);
+		
+		return es;
 	}
 
 	@Override
@@ -38,9 +48,7 @@ public class ExtSourceSearch extends ObjectSearchBase implements ObjectSearch {
 			if(((EqualsFilter)filter).getAttribute().is(Uid.NAME)) {
 				// read single object
 				String uid = (String)AttributeUtil.getSingleValue(((EqualsFilter)filter).getAttribute());
-				LOG.info("Reading ext source with uid {0}", uid);
-				ExtSource es = perun.getExtSourcesManager().getExtSourceById(Integer.valueOf(uid));
-				LOG.info("Query returned {0} ext source", es);
+				ExtSource es = (ExtSource)readPerunBeanById(Integer.valueOf(uid));
 				
 				if(es != null) {
 					mapResult(es, handler);

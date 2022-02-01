@@ -22,7 +22,7 @@ public class VoSchemaAdapter extends SchemaAdapterBase implements SchemaAdapter 
 	private static final String NS_VO_ATTR_CORE = "urn:perun:vo:attribute-def:core";
 	private static final String NS_VO_ATTR_VIRT = "urn:perun:vo:attribute-def:virt";
 
-	private static final String OBJECTCLASS_NAME = "VirtualOrganization";
+	public static final String OBJECTCLASS_NAME = "VirtualOrganization";
 	
 	private LinkedHashSet<String> attrNames = null;
 

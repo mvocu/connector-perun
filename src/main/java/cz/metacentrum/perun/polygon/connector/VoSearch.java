@@ -17,6 +17,7 @@ import org.identityconnectors.framework.spi.SearchResultsHandler;
 
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Attribute;
+import cz.metacentrum.perun.polygon.connector.rpc.model.PerunBean;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Vo;
 
 public class VoSearch extends ObjectSearchBase implements ObjectSearch {
@@ -27,6 +28,15 @@ public class VoSearch extends ObjectSearchBase implements ObjectSearch {
 		super(objectClass, adapter, perun);
 	}
 
+	@Override
+	public PerunBean readPerunBeanById(Integer id, Integer... ids) {
+		LOG.info("Reading VO with uuid {0}", id);
+		Vo vo = perun.getVosManager().getVoById(id);
+		LOG.info("Query returned {0} VO", vo.toString());
+		
+		return vo;
+	}
+	
 	@Override
 	public void executeQuery(Filter filter, OperationOptions options, ResultsHandler handler) {
 		if(filter == null) {
@@ -40,10 +50,7 @@ public class VoSearch extends ObjectSearchBase implements ObjectSearch {
 			if(((EqualsFilter)filter).getAttribute().is(Uid.NAME)) {
 				// read single object
 				String uid = (String)AttributeUtil.getSingleValue(((EqualsFilter)filter).getAttribute());
-				LOG.info("Reading VO with uuid {0}", uid);
-				Vo vo = perun.getVosManager().getVoById(Integer.parseInt(uid));
-				LOG.info("Query returned {0} VO", vo.toString());
-				
+				Vo vo = (Vo)readPerunBeanById(Integer.valueOf(uid));
 				if(vo != null) {
 					mapResult(vo, handler);
 				}
@@ -96,5 +103,5 @@ public class VoSearch extends ObjectSearchBase implements ObjectSearch {
 		ConnectorObjectBuilder out = schemaAdapter.mapObject(objectClass, vo);
 		handler.handle(out.build());
 	}
-	
+
 }

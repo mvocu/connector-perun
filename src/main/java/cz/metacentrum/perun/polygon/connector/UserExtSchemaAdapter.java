@@ -22,7 +22,7 @@ public class UserExtSchemaAdapter extends SchemaAdapterBase {
 	private static final String NS_UES_ATTR_OPT = "urn:perun:ues:attribute-def:opt";
 	private static final String NS_UES_ATTR_VIRT = "urn:perun:ues:attribute-def:virt";
 	
-	private static final String OBJECTCLASS_NAME = "UserExtSource";
+	public static final String OBJECTCLASS_NAME = "UserExtSource";
 	
 	private LinkedHashSet<String> attrNames = null;
 

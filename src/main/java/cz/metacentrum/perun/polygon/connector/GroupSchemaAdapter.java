@@ -13,6 +13,7 @@ import org.identityconnectors.framework.common.objects.Uid;
 
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Attribute;
+import cz.metacentrum.perun.polygon.connector.rpc.model.PerunBean;
 import cz.metacentrum.perun.polygon.connector.rpc.model.RichGroup;
 
 public class GroupSchemaAdapter extends SchemaAdapterBase implements SchemaAdapter {
@@ -23,17 +24,20 @@ public class GroupSchemaAdapter extends SchemaAdapterBase implements SchemaAdapt
 	private static final String NS_GROUP_ATTR_CORE = "urn:perun:group:attribute-def:core";
 	private static final String NS_GROUP_ATTR_VIRT = "urn:perun:group:attribute-def:virt";
 
-	private static final String OBJECTCLASS_NAME = "Group";
+	public static final String OBJECTCLASS_NAME = "Group";
 	
 	private LinkedHashSet<String> attrNames = null;
 
-	public class GroupInfoObject {
+	public class GroupInfoObject extends PerunBean {
+
 		public RichGroup 	group;
 		public List<Integer> 	includedInGroups;
 		public String		voName;
 		
 		public GroupInfoObject(String voName, RichGroup group, List<Integer> includedInGroups) {
 			super();
+			this.setId(group.getId());
+			this.setBeanName(group.getBeanName());
 			this.voName = voName;
 			this.group = group;
 			this.includedInGroups = includedInGroups;
@@ -41,6 +45,8 @@ public class GroupSchemaAdapter extends SchemaAdapterBase implements SchemaAdapt
 		
 		public GroupInfoObject(String voName, RichGroup group) {
 			super();
+			this.setId(group.getId());
+			this.setBeanName(group.getBeanName());
 			this.voName = voName;
 			this.group = group;
 		}

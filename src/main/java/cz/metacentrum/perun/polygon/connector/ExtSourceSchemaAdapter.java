@@ -15,7 +15,7 @@ public class ExtSourceSchemaAdapter extends SchemaAdapterBase implements SchemaA
 
 	//private LinkedHashSet<String> attrNames = null;
 
-	private static final String OBJECTCLASS_NAME = "ExtSource";
+	public static final String OBJECTCLASS_NAME = "ExtSource";
 	
 	public ExtSourceSchemaAdapter(PerunRPC perun) {
 		super(perun);

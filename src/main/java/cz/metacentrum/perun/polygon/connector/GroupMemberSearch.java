@@ -21,6 +21,7 @@ import cz.metacentrum.perun.polygon.connector.rpc.model.Attribute;
 import cz.metacentrum.perun.polygon.connector.rpc.model.GroupMemberData;
 import cz.metacentrum.perun.polygon.connector.rpc.model.GroupMemberRelation;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Member;
+import cz.metacentrum.perun.polygon.connector.rpc.model.PerunBean;
 
 public class GroupMemberSearch extends ObjectSearchBase implements ObjectSearch {
 
@@ -28,6 +29,18 @@ public class GroupMemberSearch extends ObjectSearchBase implements ObjectSearch 
 	
 	public GroupMemberSearch(ObjectClass objectClass, SchemaAdapter adapter, PerunRPC perun) {
 		super(objectClass, adapter, perun);
+	}
+
+	@Override
+	public PerunBean readPerunBeanById(Integer id, Integer... ids) {
+		if(ids.length == 0) {
+			return null;
+		}
+		LOG.info("Reading GroupMember with id {0}:{1}", id, ids[0]);
+		Member member = perun.getGroupsManager().getGroupMemberById(id, ids[0]);
+		LOG.info("Query returned {0} group member", member);
+		
+		return member;
 	}
 
 	@Override
@@ -43,11 +56,9 @@ public class GroupMemberSearch extends ObjectSearchBase implements ObjectSearch 
 			if(((EqualsFilter)filter).getAttribute().is(Uid.NAME)) {
 				// read single object
 				String uid = (String)AttributeUtil.getSingleValue(((EqualsFilter)filter).getAttribute());
-				LOG.info("Reading GroupMember with uid {0}", uid);
 				String[] parts = uid.split(":");
 				Integer groupId = Integer.valueOf(parts[0]);
-				Member member = perun.getGroupsManager().getGroupMemberById(groupId, Integer.valueOf(parts[1]));
-				LOG.info("Query returned {0} group member", member);
+				Member member = (Member)readPerunBeanById(groupId, Integer.valueOf(parts[1]));
 				
 				if(member != null) {
 					GroupMemberRelation memberRelation = new GroupMemberRelation();

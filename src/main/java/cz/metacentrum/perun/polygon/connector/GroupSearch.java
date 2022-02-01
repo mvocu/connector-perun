@@ -23,6 +23,7 @@ import cz.metacentrum.perun.polygon.connector.GroupSchemaAdapter.GroupInfoObject
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Attribute;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Group;
+import cz.metacentrum.perun.polygon.connector.rpc.model.PerunBean;
 import cz.metacentrum.perun.polygon.connector.rpc.model.RichGroup;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Vo;
 
@@ -32,6 +33,23 @@ public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 
 	public GroupSearch(ObjectClass objectClass, SchemaAdapter adapter, PerunRPC perun) {
 		super(objectClass, adapter, perun);
+	}
+
+	@Override
+	public PerunBean readPerunBeanById(Integer id, Integer... ids) {
+		LOG.info("Reading group with id {0}", id);
+		RichGroup group = perun.getGroupsManager().getRichGroupByIdWithAttributesByNames(id, null);
+		Vo vo = perun.getVosManager().getVoById(group.getVoId());
+		LOG.info("Query returned {0} group", group);
+		if(group != null) {
+			GroupInfoObject group_info = ((GroupSchemaAdapter)schemaAdapter).new GroupInfoObject(vo.getName(), group);
+			List<Group> includedIn = perun.getGroupsManager().getGroupUnions(group.getId(), true);
+			group_info.setIncludedInGroups(includedIn.stream()
+					.map(g -> g.getId())
+					.collect(Collectors.toList()));
+			return group_info;
+		}
+		return null;
 	}
 
 	@Override
@@ -47,16 +65,8 @@ public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 			if(((EqualsFilter)filter).getAttribute().is(Uid.NAME)) {
 				// read single object
 				String uid = (String)AttributeUtil.getSingleValue(((EqualsFilter)filter).getAttribute());
-				LOG.info("Reading group with id {0}", uid);
-				RichGroup group = perun.getGroupsManager().getRichGroupByIdWithAttributesByNames(Integer.valueOf(uid), null);
-				Vo vo = perun.getVosManager().getVoById(group.getVoId());
-				LOG.info("Query returned {0} group", group);
-				if(group != null) {
-					GroupInfoObject group_info = ((GroupSchemaAdapter)schemaAdapter).new GroupInfoObject(vo.getName(), group);
-					List<Group> includedIn = perun.getGroupsManager().getGroupUnions(group.getId(), true);
-					group_info.setIncludedInGroups(includedIn.stream()
-							.map(g -> g.getId())
-							.collect(Collectors.toList()));
+				GroupInfoObject group_info = (GroupInfoObject)readPerunBeanById(Integer.valueOf(uid));
+				if(group_info != null) {
 					mapResult(group_info, handler);
 				}
 				SearchResult result = new SearchResult(

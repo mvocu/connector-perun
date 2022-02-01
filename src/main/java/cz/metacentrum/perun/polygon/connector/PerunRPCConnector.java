@@ -57,6 +57,7 @@ implements PoolableConnector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp, Schema
 	private PerunRPC perun = null;
 	
 	private Map<String, SchemaAdapter> mapObjectClassToSchemaAdapter = null;
+	private Map<String, ObjectSearch> mapObjectClassToObjectSearch = null;
 	
 	@Override
 	public void test() {
@@ -102,6 +103,7 @@ implements PoolableConnector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp, Schema
 	        		);
 
 	        initSchemaAdapters();
+	        initObjectSearch();
 	}
 
 	@Override
@@ -130,7 +132,7 @@ implements PoolableConnector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp, Schema
 	@Override
 	public void executeQuery(ObjectClass objectClass, Filter query, ResultsHandler handler, OperationOptions options) {
 
-		ObjectSearch search = getSearchForObjectClass(objectClass, getSchemaAdapterForObjectClass(objectClass));
+		ObjectSearch search = getObjectSearchForObjectClass(objectClass);
 		
 		if(search != null) {
 			search.executeQuery(query, options, handler);
@@ -168,12 +170,16 @@ implements PoolableConnector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp, Schema
 		});
 	}
 	
-	@Override
-	public SchemaAdapter getSchemaAdapterForObjectClass(ObjectClass objectClass) {
-		return mapObjectClassToSchemaAdapter.get(objectClass.getObjectClassValue());
+	private void initObjectSearch() {
+		for(Map.Entry<String, SchemaAdapter> entry : mapObjectClassToSchemaAdapter.entrySet()) {
+			ObjectClass objectClass = new ObjectClass(entry.getKey());
+			mapObjectClassToObjectSearch.put(
+					entry.getKey(),
+					createSearchForObjectClass(objectClass, entry.getValue()));
+		}
 	}
 	
-	private ObjectSearch getSearchForObjectClass(ObjectClass objectClass, SchemaAdapter adapter) {
+	private ObjectSearch createSearchForObjectClass(ObjectClass objectClass, SchemaAdapter adapter) {
 		ObjectSearch search = null;
 		
 		switch(objectClass.getObjectClassValue()) {
@@ -215,5 +221,15 @@ implements PoolableConnector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp, Schema
 		}
 
 		return search;
+	}
+
+	@Override
+	public SchemaAdapter getSchemaAdapterForObjectClass(ObjectClass objectClass) {
+		return mapObjectClassToSchemaAdapter.get(objectClass.getObjectClassValue());
+	}
+	
+	@Override
+	public ObjectSearch getObjectSearchForObjectClass(ObjectClass objectClass) {
+		return mapObjectClassToObjectSearch.get(objectClass.getObjectClassValue());
 	}
 }

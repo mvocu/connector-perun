@@ -20,6 +20,7 @@ import org.identityconnectors.framework.spi.SearchResultsHandler;
 
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Attribute;
+import cz.metacentrum.perun.polygon.connector.rpc.model.PerunBean;
 import cz.metacentrum.perun.polygon.connector.rpc.model.RichUser;
 import cz.metacentrum.perun.polygon.connector.rpc.model.User;
 import cz.metacentrum.perun.polygon.connector.rpc.model.UserExtSource;
@@ -31,6 +32,19 @@ public class UserSearch extends ObjectSearchBase {
 	
 	public UserSearch(ObjectClass objectClass, SchemaAdapter adapter, PerunRPC perun) {
 		super(objectClass, adapter, perun);
+	}
+
+	@Override
+	public PerunBean readPerunBeanById(Integer id, Integer... ids) {
+		LOG.info("Reading user with uid {0}", id);
+		List<RichUser> users = perun.getUsersManager().getRichUsersWithAttributesByIds(Arrays.asList(id));
+		LOG.info("Query returned {0} users", users.size());
+		
+		if(!users.isEmpty()) {
+			return users.get(0);
+		}
+		
+		return null;
 	}
 
 	@Override
@@ -46,12 +60,9 @@ public class UserSearch extends ObjectSearchBase {
 			if(((EqualsFilter)filter).getAttribute().is(Uid.NAME)) {
 				// read single object
 				String uid = (String)AttributeUtil.getSingleValue(((EqualsFilter)filter).getAttribute());
-				LOG.info("Reading user with uid {0}", uid);
-				List<RichUser> users = perun.getUsersManager().getRichUsersWithAttributesByIds(Arrays.asList(Integer.valueOf(uid)));
-				LOG.info("Query returned {0} users", users.size());
-				
-				if(!users.isEmpty()) {
-					mapResult(users.get(0), handler);
+				RichUser user = (RichUser)readPerunBeanById(Integer.valueOf(uid));
+				if(user != null) {
+					mapResult(user, handler);
 				}
 				SearchResult result = new SearchResult(
 						 null, 	/* cookie */ 
@@ -110,5 +121,4 @@ public class UserSearch extends ObjectSearchBase {
 		handler.handle(out.build());
 	}
 
-	
 }
