@@ -35,6 +35,9 @@
         <connectorPackage>cz.metacentrum.perun.polygon.connector</connectorPackage>
         <connectorClass>PerunRPCConnector</connectorClass>
         <perun.version>3.28.0-SNAPSHOT</perun.version>
+        <project.source.version>11</project.source.version>
+        <maven.compiler.source>${project.source.version}</maven.compiler.source>
+        <maven.compiler.target>${project.source.version}</maven.compiler.target>
     </properties>
 
     <repositories>
@@ -64,9 +67,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-				<configuration>
-					<release>11</release>
-				</configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
