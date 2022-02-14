@@ -82,7 +82,7 @@ public class ExtSourceSearch extends ObjectSearchBase implements ObjectSearch {
 
 		int remaining = -1;
 		
-		if(pageSize > 0) {
+		if(pageSize != null && pageSize > 0) {
 			int size = esList.size();
 			int last = (pageOffset + pageSize > size) ? size : pageOffset + pageSize; 
 			esList = esList.subList(pageOffset, last);

@@ -136,6 +136,8 @@ implements PoolableConnector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp, Schema
 		
 		if(search != null) {
 			search.executeQuery(query, options, handler);
+		} else {
+			LOG.error("No method found to search for objectclass {0}", objectClass.getObjectClassValue());
 		}
 		
 		return;
@@ -168,15 +170,18 @@ implements PoolableConnector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp, Schema
 		adapters.stream().forEach(adapter -> { 
 			mapObjectClassToSchemaAdapter.put(adapter.getObjectClassName(), adapter);
 		});
+		LOG.info("Initialized {0} schema adapters", mapObjectClassToSchemaAdapter.size());
 	}
 	
 	private void initObjectSearch() {
+		mapObjectClassToObjectSearch = new LinkedHashMap<>();
 		for(Map.Entry<String, SchemaAdapter> entry : mapObjectClassToSchemaAdapter.entrySet()) {
 			ObjectClass objectClass = new ObjectClass(entry.getKey());
 			mapObjectClassToObjectSearch.put(
 					entry.getKey(),
 					createSearchForObjectClass(objectClass, entry.getValue()));
 		}
+		LOG.info("Initialized {0} object searchers", mapObjectClassToObjectSearch.size());
 	}
 	
 	private ObjectSearch createSearchForObjectClass(ObjectClass objectClass, SchemaAdapter adapter) {

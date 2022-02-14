@@ -80,7 +80,7 @@ public class FacilitySearch extends ObjectSearchBase implements ObjectSearch {
 		
 		LOG.info("Reading {0} facilities from page at offset {1}", pageSize, pageOffset);
 		facilities = perun.getFacilitiesManager().getAllFacilities();
-		if(pageSize > 0) {
+		if(pageSize != null && pageSize > 0) {
 			int size = facilities.size();
 			int last = (pageOffset + pageSize > size) ? size : pageOffset + pageSize; 
 			facilities = facilities.subList(pageOffset, last);

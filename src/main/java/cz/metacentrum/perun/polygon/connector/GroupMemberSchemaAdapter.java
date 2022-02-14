@@ -13,6 +13,7 @@ import org.identityconnectors.framework.common.objects.Uid;
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Attribute;
 import cz.metacentrum.perun.polygon.connector.rpc.model.GroupMemberRelation;
+import cz.metacentrum.perun.polygon.connector.rpc.model.PerunBean;
 
 public class GroupMemberSchemaAdapter extends SchemaAdapterBase implements SchemaAdapter {
 
@@ -25,6 +26,30 @@ public class GroupMemberSchemaAdapter extends SchemaAdapterBase implements Schem
 	
 	private LinkedHashSet<String> attrNames = null;
 
+	public class GroupMemberRelationBean extends PerunBean {
+		
+		private GroupMemberRelation relation;
+
+		public GroupMemberRelationBean() {
+			super();
+			this.relation = null;
+		}
+		
+		public GroupMemberRelationBean(GroupMemberRelation relation) {
+			super();
+			this.relation = relation;
+		}
+
+		public GroupMemberRelation getRelation() {
+			return relation;
+		}
+
+		public void setRelation(GroupMemberRelation relation) {
+			this.relation = relation;
+		}
+		
+	}
+	
 	public GroupMemberSchemaAdapter(PerunRPC perun) {
 		super(perun);
 		attrNames = new LinkedHashSet<>();
@@ -111,6 +136,13 @@ public class GroupMemberSchemaAdapter extends SchemaAdapterBase implements Schem
 	@Override
 	public String getObjectClassName() {
 		return OBJECTCLASS_NAME;
+	}
+
+	@Override
+	public Uid getUid(Object source) {
+		GroupMemberRelation member = (GroupMemberRelation)source;
+		Integer groupId = member.getG();
+		return new Uid(groupId.toString() + ":" + member.getM());
 	}
 
 	@Override

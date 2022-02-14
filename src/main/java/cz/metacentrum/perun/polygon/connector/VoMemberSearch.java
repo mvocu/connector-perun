@@ -83,7 +83,7 @@ public class VoMemberSearch extends ObjectSearchBase implements ObjectSearch {
 		int remaining = -1;
 		
 		LOG.info("Reading {0} members from page at offset {1}", pageSize, pageOffset);
-		if(pageSize > 0) {
+		if(pageSize != null && pageSize > 0) {
 			List<Member> partMembers = new ArrayList<Member>();
 			LOG.info("Reading list of members.");
 			partMembers.addAll(perun.getMembersManager().getAllMembers());

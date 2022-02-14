@@ -82,7 +82,7 @@ public class VoSearch extends ObjectSearchBase implements ObjectSearch {
 		LOG.info("Reading {0} VOs from page at offset {1}", pageSize, pageOffset);
 		vos = perun.getVosManager().getAllVos();
 		LOG.info("Query returned {0} VOs", vos.size());
-		if(pageSize > 0) {
+		if(pageSize != null && pageSize > 0) {
 			int size = vos.size();
 			int last = (pageOffset + pageSize > size) ? size : pageOffset + pageSize; 
 			vos= vos.subList(pageOffset, last);

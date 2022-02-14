@@ -10,10 +10,12 @@ import org.identityconnectors.framework.common.objects.AttributeInfoBuilder;
 import org.identityconnectors.framework.common.objects.ConnectorObjectBuilder;
 import org.identityconnectors.framework.common.objects.ObjectClass;
 import org.identityconnectors.framework.common.objects.ObjectClassInfoBuilder;
+import org.identityconnectors.framework.common.objects.Uid;
 
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Attribute;
 import cz.metacentrum.perun.polygon.connector.rpc.model.AttributeDefinition;
+import cz.metacentrum.perun.polygon.connector.rpc.model.PerunBean;
 
 public abstract class SchemaAdapterBase implements SchemaAdapter {
 
@@ -31,6 +33,13 @@ public abstract class SchemaAdapterBase implements SchemaAdapter {
 	@Override
 	public abstract String getObjectClassName();
 	
+	@Override
+	public Uid getUid(Object source) {
+		// this is the default implementation, that just returns Id of the Perun bean
+		// NOTE - this must be overriden for objects creating uid differently
+		return new Uid(((PerunBean)source).getId().toString());
+	}
+
 	@Override
 	public abstract ConnectorObjectBuilder mapObject(ObjectClass objectClass, Object source);
 

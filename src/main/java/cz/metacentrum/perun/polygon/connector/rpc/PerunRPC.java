@@ -1,7 +1,12 @@
 package cz.metacentrum.perun.polygon.connector.rpc;
 
 import cz.metacentrum.perun.polygon.connector.rpc.invoker.ApiClient;
+
+import java.util.List;
+
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -45,6 +50,10 @@ public class PerunRPC {
     public PerunRPC(RestTemplate restTemplate) {
         if (restTemplate == null) {
             restTemplate = new RestTemplate(new HttpComponentsClientHttpRequestFactory());
+            // autoregister JsonNullableModule for parsing nullable properties
+            restTemplate.setMessageConverters(List.of(new MappingJackson2HttpMessageConverter(
+        		    Jackson2ObjectMapperBuilder.json().findModulesViaServiceLoader(true).build()))
+        		    );
         }
         //HTTP connection pooling and cookie reuse (PerunSession is created only for the first request)
         apiClient = new ApiClient(restTemplate);

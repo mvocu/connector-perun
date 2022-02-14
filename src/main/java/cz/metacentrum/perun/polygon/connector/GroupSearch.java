@@ -101,7 +101,7 @@ public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 		Map<Integer, String> vo_names = vos.stream().collect(Collectors.toMap((vo -> vo.getId()), (vo -> vo.getName()) ));
 		
 		LOG.info("Reading {0} groups from page at offset {1}", pageSize, pageOffset);
-		if(pageSize > 0) {
+		if(pageSize != null && pageSize > 0) {
 			List<Group> partGroups = new ArrayList<Group>();
 			for(Vo vo : vos) {
 				LOG.info("Reading list of groups for VO {0}", vo.getId());

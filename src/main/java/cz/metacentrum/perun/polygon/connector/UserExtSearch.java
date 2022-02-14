@@ -92,7 +92,7 @@ public class UserExtSearch extends ObjectSearchBase implements ObjectSearch {
 			userExtSources.addAll(perun.getUsersManager().getUserExtSources(user.getId()));
 			LOG.info("Total user ext sources so far: {0}", userExtSources.size());
 		}
-		if(pageSize > 0) {
+		if(pageSize != null && pageSize > 0) {
 			int size = userExtSources.size();
 			int last = (pageOffset + pageSize > size) ? size : pageOffset + pageSize; 
 			userExtSources = userExtSources.subList(pageOffset, last);
