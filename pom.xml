@@ -115,107 +115,61 @@
                     </execution>
                 </executions>
             </plugin>
-            
-			<!-- 
-            <plugin>
-            	<groupId>org.apache.maven.plugins</groupId>
-            	<artifactId>maven-shade-plugin</artifactId>
-            	<version>3.2.4</version>
-            	<executions>
-            		<execution>
-            			<phase>package</phase>
-            			<goals>
-            				<goal>shade</goal>
-            			</goals>
-            			<configuration>
-            				<artifactSet>
-            					<excludes>
-            						<exclude>org.springframework:*</exclude>
-            						<exclude>com.fasterxml.jackson.core:*</exclude>
-            					</excludes>
-            				</artifactSet>
-            			</configuration>
-            		</execution>
-            	</executions>
-            </plugin>
-             -->
         </plugins>
     </build>
-    
+
+    <!-- use same versions as midPoint 4.4.1, see https://github.com/Evolveum/midpoint/blob/v4.4.1/pom.xml#L91 -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>2.5.2</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
-
-		<!-- 
-		<dependency>
-			<artifactId>connector-rest</artifactId>
-	        <groupId>com.evolveum.polygon</groupId>
-	        <version>1.5.0.0</version>
-		</dependency>
-		-->
-
-		<!-- this is generated from openapi source by maven plugin 
-        <dependency>
-            <groupId>com.evolveum.polygon</groupId>
-            <artifactId>connector-perun-rpc</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-        </dependency>
-		 -->
-		 
-		<!-- connector-perun-rpc openapi dependencies -->
-
-		<!-- 
-		<dependency>
-    	     <groupId>org.springframework</groupId>
-   	    	 <artifactId>spring-web</artifactId>
-       	 	<version>5.3.4</version>
-		</dependency>
-		
-		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-context</artifactId>
-			<version>5.3.4</version>
-		</dependency>
- 		-->
- 				
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
-            <version>5.3.8</version>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
-            <version>5.3.8</version>
         </dependency>
         <dependency>
             <groupId>javax.annotation</groupId>
             <artifactId>javax.annotation-api</artifactId>
-            <version>1.3.2</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.12.3</version>
         </dependency>
-	<dependency>
-	    <groupId>com.fasterxml.jackson.datatype</groupId>
-	    <artifactId>jackson-datatype-jdk8</artifactId>
-            <version>2.12.3</version>
-	</dependency>
-	<dependency>
-	    <groupId>com.fasterxml.jackson.datatype</groupId>
-	    <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>2.12.3</version>
-	</dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jdk8</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
 	<dependency>
 	    <groupId>com.fasterxml.jackson.module</groupId>
 	    <artifactId>jackson-module-parameter-names</artifactId>
-	    <version>2.12.3</version>
 	</dependency>
 	<dependency>
 	    <groupId>com.fasterxml.jackson.module</groupId>
 	    <artifactId>jackson-module-jaxb-annotations</artifactId>
-	    <version>2.12.3</version>
 	</dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+        </dependency>
+
+        <!-- versions of these dependencies are set by OpenAPI Generator -->
         <dependency>
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>jsr305</artifactId>
@@ -231,12 +185,7 @@
             <artifactId>jackson-databind-nullable</artifactId>
             <version>0.2.2</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.5.13</version>
-        </dependency>
-        
+
 	</dependencies>
 
 </project>
