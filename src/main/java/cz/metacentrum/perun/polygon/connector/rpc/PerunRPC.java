@@ -4,6 +4,7 @@ import cz.metacentrum.perun.polygon.connector.rpc.invoker.ApiClient;
 
 import java.util.List;
 
+import org.openapitools.jackson.nullable.JsonNullableModule;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
@@ -51,9 +52,15 @@ public class PerunRPC {
         if (restTemplate == null) {
             restTemplate = new RestTemplate(new HttpComponentsClientHttpRequestFactory());
             // autoregister JsonNullableModule for parsing nullable properties
-            restTemplate.setMessageConverters(List.of(new MappingJackson2HttpMessageConverter(
-        		    Jackson2ObjectMapperBuilder.json().findModulesViaServiceLoader(true).build()))
-        		    );
+            //restTemplate.setMessageConverters(List.of(new MappingJackson2HttpMessageConverter(
+        	//	    Jackson2ObjectMapperBuilder.json().findModulesViaServiceLoader(true).build()))
+        	//	    );
+            restTemplate.getMessageConverters().forEach(converter -> {
+        	    if(converter instanceof MappingJackson2HttpMessageConverter) {
+        		    MappingJackson2HttpMessageConverter jConverter = (MappingJackson2HttpMessageConverter)converter;
+        		    jConverter.getObjectMapper().registerModule(new JsonNullableModule());
+        	    }
+            } );
         }
         //HTTP connection pooling and cookie reuse (PerunSession is created only for the first request)
         apiClient = new ApiClient(restTemplate);

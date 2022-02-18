@@ -113,7 +113,7 @@ implements PoolableConnector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp, Schema
 
 	@Override
 	public void checkAlive() {
-		perun.getUtils().getPerunRPCVersion();
+		perun.getUtils().getPerunSystemTimeInMillis();
 	}
 
 	@Override
