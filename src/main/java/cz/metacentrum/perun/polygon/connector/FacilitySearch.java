@@ -13,6 +13,7 @@ import org.identityconnectors.framework.common.objects.filter.EqualsFilter;
 import org.identityconnectors.framework.common.objects.filter.EqualsIgnoreCaseFilter;
 import org.identityconnectors.framework.common.objects.filter.Filter;
 import org.identityconnectors.framework.spi.SearchResultsHandler;
+import org.springframework.web.client.HttpClientErrorException;
 
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Facility;
@@ -29,7 +30,13 @@ public class FacilitySearch extends ObjectSearchBase implements ObjectSearch {
 	@Override
 	public PerunBean readPerunBeanById(Integer id, Integer... ids) {
 		LOG.info("Reading facility with uid {0}", id);
-		Facility facility = perun.getFacilitiesManager().getFacilityById(Integer.valueOf(id));
+		Facility facility = null;
+		try {
+			facility = perun.getFacilitiesManager().getFacilityById(Integer.valueOf(id));
+		} catch (HttpClientErrorException exception) {
+			LOG.info("Query returned no facility");
+			return null;
+		}
 		LOG.info("Query returned {0} facility", facility.toString());
 		
 		return facility;

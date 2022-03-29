@@ -55,7 +55,18 @@ public class VoSchemaAdapter extends SchemaAdapterBase implements SchemaAdapter 
 		name.setRequired(true);
 		vo.addAttributeInfo(name.build());
 
-		// read Member attribute definitions from Perun
+		// short name
+		AttributeInfoBuilder short_name = new AttributeInfoBuilder("vo_short_name", String.class);
+		short_name.setNativeName("shortName");
+		short_name.setRequired(true);
+		short_name.setCreateable(true);
+		short_name.setUpdateable(true);
+		short_name.setReadable(true);
+		short_name.setMultiValued(false);
+		vo.addAttributeInfo(short_name.build());
+		
+
+		// read Vo attribute definitions from Perun
 		addAttributesFromNamespace(vo, NS_VO_ATTR_CORE, attrNames);
 		addAttributesFromNamespace(vo, NS_VO_ATTR_DEF, attrNames);
 		addAttributesFromNamespace(vo, NS_VO_ATTR_VIRT, attrNames);

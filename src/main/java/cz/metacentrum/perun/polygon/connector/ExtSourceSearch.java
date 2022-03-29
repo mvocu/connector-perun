@@ -13,6 +13,7 @@ import org.identityconnectors.framework.common.objects.filter.EqualsFilter;
 import org.identityconnectors.framework.common.objects.filter.EqualsIgnoreCaseFilter;
 import org.identityconnectors.framework.common.objects.filter.Filter;
 import org.identityconnectors.framework.spi.SearchResultsHandler;
+import org.springframework.web.client.HttpClientErrorException;
 
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
 import cz.metacentrum.perun.polygon.connector.rpc.model.ExtSource;
@@ -29,7 +30,13 @@ public class ExtSourceSearch extends ObjectSearchBase implements ObjectSearch {
 	@Override
 	public PerunBean readPerunBeanById(Integer id, Integer... ids) {
 		LOG.info("Reading ext source with uid {0}", id);
-		ExtSource es = perun.getExtSourcesManager().getExtSourceById(id);
+		ExtSource es = null;
+		try {
+			es = perun.getExtSourcesManager().getExtSourceById(id);
+		} catch (HttpClientErrorException exception) {
+			LOG.info("Query returned none ext source");
+			return null;
+		}
 		LOG.info("Query returned {0} ext source", es);
 		
 		return es;

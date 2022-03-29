@@ -18,6 +18,7 @@ import org.identityconnectors.framework.common.objects.filter.EqualsFilter;
 import org.identityconnectors.framework.common.objects.filter.EqualsIgnoreCaseFilter;
 import org.identityconnectors.framework.common.objects.filter.Filter;
 import org.identityconnectors.framework.spi.SearchResultsHandler;
+import org.springframework.web.client.HttpClientErrorException;
 
 import cz.metacentrum.perun.polygon.connector.GroupSchemaAdapter.GroupInfoObject;
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
@@ -38,8 +39,20 @@ public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 	@Override
 	public PerunBean readPerunBeanById(Integer id, Integer... ids) {
 		LOG.info("Reading group with id {0}", id);
-		RichGroup group = perun.getGroupsManager().getRichGroupByIdWithAttributesByNames(id, null);
-		Vo vo = perun.getVosManager().getVoById(group.getVoId());
+		RichGroup group;
+		try {
+			group = perun.getGroupsManager().getRichGroupByIdWithAttributesByNames(id, null);
+		} catch (HttpClientErrorException exception) {
+			LOG.info("Query returned no group");
+			return null;
+		}
+		Vo vo = null;
+		try {
+			vo = perun.getVosManager().getVoById(group.getVoId());
+		} catch (HttpClientErrorException exception) {
+			LOG.info("Query returned no group");
+			return null;
+		}
 		LOG.info("Query returned {0} group", group);
 		if(group != null) {
 			GroupInfoObject group_info = ((GroupSchemaAdapter)schemaAdapter).new GroupInfoObject(vo.getName(), group);
@@ -120,10 +133,23 @@ public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 				groups.add(perun.getGroupsManager().getRichGroupByIdWithAttributesByNames(groupId, null));
 			}
 		} else {
-			for(Vo vo : vos) {
+			List<Group> partGroups = new ArrayList<Group>();
+			for(Vo vo : vos) { 
+				/*
 				LOG.info("Reading list of groups for VO {0}", vo.getId());
 				groups.addAll(perun.getGroupsManager().getAllRichGroupsWithAttributesByNames(vo.getId(), null));
 				LOG.info("Total groups so far: {0}", groups.size());
+				*/
+				LOG.info("Reading list of groups for VO {0}", vo.getId());
+				partGroups.addAll(perun.getGroupsManager().getAllGroups(vo.getId()));
+				LOG.info("Total groups so far: {0}", partGroups.size());
+			}
+			List<Integer> groupIds = partGroups.stream()
+					.map(group -> { return group.getId(); })
+					.sorted()
+					.collect(Collectors.toList());
+			for(Integer groupId : groupIds) {
+				groups.add(perun.getGroupsManager().getRichGroupByIdWithAttributesByNames(groupId, null));
 			}
 		}
 		LOG.info("Query returned {0} groups", groups.size());

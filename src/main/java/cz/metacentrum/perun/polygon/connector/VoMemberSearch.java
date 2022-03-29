@@ -16,6 +16,7 @@ import org.identityconnectors.framework.common.objects.filter.EqualsFilter;
 import org.identityconnectors.framework.common.objects.filter.EqualsIgnoreCaseFilter;
 import org.identityconnectors.framework.common.objects.filter.Filter;
 import org.identityconnectors.framework.spi.SearchResultsHandler;
+import org.springframework.web.client.HttpClientErrorException;
 
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Member;
@@ -34,7 +35,12 @@ public class VoMemberSearch extends ObjectSearchBase implements ObjectSearch {
 	@Override
 	public PerunBean readPerunBeanById(Integer id, Integer... ids) {
 		LOG.info("Reading member with uid {0}", id);
-		RichMember member = perun.getMembersManager().getRichMemberWithAttributes(id);
+		RichMember member = null;
+		try {
+			member = perun.getMembersManager().getRichMemberWithAttributes(id);
+		} catch (HttpClientErrorException exception) {
+			return null;
+		}
 		return member;
 	}
 

@@ -2,6 +2,7 @@ package cz.metacentrum.perun.polygon.connector;
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.identityconnectors.framework.common.objects.AttributeBuilder;
 import org.identityconnectors.framework.common.objects.AttributeInfoBuilder;
@@ -111,8 +112,8 @@ public class GroupSchemaAdapter extends SchemaAdapterBase implements SchemaAdapt
 		group.addAttributeInfo(name.build());
 		
 		// parent group id
-		AttributeInfoBuilder parent_group_id = new AttributeInfoBuilder("group_parent_group_id", Integer.class);
-		parent_group_id.setNativeName(NS_GROUP_ATTR + ":parent_group_id");
+		AttributeInfoBuilder parent_group_id = new AttributeInfoBuilder("group_parent_group_id", String.class);
+		parent_group_id.setNativeName("parentGroupId");
 		parent_group_id.setMultiValued(false);
 		parent_group_id.setCreateable(true);
 		parent_group_id.setUpdateable(true);
@@ -120,15 +121,55 @@ public class GroupSchemaAdapter extends SchemaAdapterBase implements SchemaAdapt
 		group.addAttributeInfo(parent_group_id.build());
 
 		// included in group id
-		AttributeInfoBuilder included_in_group_id = new AttributeInfoBuilder("group_included_in_group_id", Integer.class);
-		included_in_group_id.setNativeName(NS_GROUP_ATTR + ":included_in_group_id");
+		AttributeInfoBuilder included_in_group_id = new AttributeInfoBuilder("group_included_in_group_id", String.class);
+		included_in_group_id.setNativeName("includedInGroupId");
 		included_in_group_id.setMultiValued(true);
 		included_in_group_id.setCreateable(true);
 		included_in_group_id.setUpdateable(true);
 		included_in_group_id.setRequired(false);
 		group.addAttributeInfo(included_in_group_id.build());
 
-		// read User attribute definitions from Perun
+		// short name
+		AttributeInfoBuilder short_name = new AttributeInfoBuilder("group_short_name", String.class);
+		short_name.setNativeName("shortName");
+		short_name.setRequired(true);
+		short_name.setCreateable(true);
+		short_name.setUpdateable(true);
+		short_name.setReadable(true);
+		short_name.setMultiValued(false);
+		group.addAttributeInfo(short_name.build());
+
+		// description
+		AttributeInfoBuilder description = new AttributeInfoBuilder("group_description", String.class);
+		description.setNativeName("description");
+		description.setRequired(false);
+		description.setCreateable(true);
+		description.setUpdateable(true);
+		description.setReadable(true);
+		description.setMultiValued(false);
+		group.addAttributeInfo(description.build());
+
+		// voId
+		AttributeInfoBuilder vo_id = new AttributeInfoBuilder("group_vo_id", String.class);
+		vo_id.setNativeName("voId");
+		vo_id.setRequired(true);
+		vo_id.setCreateable(true);
+		vo_id.setUpdateable(true);
+		vo_id.setReadable(true);
+		vo_id.setMultiValued(false);
+		group.addAttributeInfo(vo_id.build());
+
+		// uuid
+		AttributeInfoBuilder uuid = new AttributeInfoBuilder("group_uuid", String.class);
+		uuid.setNativeName("uuid");
+		uuid.setRequired(false);
+		uuid.setCreateable(true);
+		uuid.setUpdateable(true);
+		uuid.setReadable(true);
+		uuid.setMultiValued(false);
+		group.addAttributeInfo(uuid.build());
+
+		// read Group attribute definitions from Perun
 		addAttributesFromNamespace(group, NS_GROUP_ATTR_CORE, attrNames);
 		addAttributesFromNamespace(group, NS_GROUP_ATTR_DEF, attrNames);
 		addAttributesFromNamespace(group, NS_GROUP_ATTR_VIRT, attrNames);
@@ -150,16 +191,44 @@ public class GroupSchemaAdapter extends SchemaAdapterBase implements SchemaAdapt
 		out.setName(group_info.getVoName() + ":" + group_info.getGroup().getName());
 		out.setUid(group_info.getGroup().getId().toString());
 		// -- manually mapped attributes:
+		AttributeBuilder ab = null;
 		// group_parent_group_id
-		AttributeBuilder ab = new AttributeBuilder();
-		ab.setName("group_parent_group_id");
-		ab.addValue(group_info.getParentGroupId());
-		out.addAttribute(ab.build());
+		if(group_info.getParentGroupId() != null) {
+			ab = new AttributeBuilder();
+			ab.setName("group_parent_group_id");
+			ab.addValue(group_info.getParentGroupId().toString());
+			out.addAttribute(ab.build());
+		}
 		// group_included_in_group_id
+		if(group_info.getIncludedInGroups() != null) {
+			ab = new AttributeBuilder();
+			ab.setName("group_included_in_group_id");
+			ab.addValue(group_info.getIncludedInGroups().stream()
+					.map( id -> { return id.toString(); })
+					.collect(Collectors.toList()));
+			out.addAttribute(ab.build());
+		}
+		// group_short_name
 		ab = new AttributeBuilder();
-		ab.setName("group_included_in_group_id");
-		ab.addValue(group_info.getIncludedInGroups());
+		ab.setName("group_short_name");
+		ab.addValue(group_info.getGroup().getShortName());
 		out.addAttribute(ab.build());
+		// group_description
+		ab = new AttributeBuilder();
+		ab.setName("group_description");
+		ab.addValue(group_info.getGroup().getDescription());
+		out.addAttribute(ab.build());
+		// group_vo_id
+		ab = new AttributeBuilder();
+		ab.setName("group_vo_id");
+		ab.addValue(group_info.getGroup().getVoId().toString());
+		out.addAttribute(ab.build());
+		// group_uuid
+		ab = new AttributeBuilder();
+		ab.setName("group_uuid");
+		ab.addValue(group_info.getGroup().getUuid().toString());
+		out.addAttribute(ab.build());
+		
 		// defined group attributes
 		if(group_info.getGroup().getAttributes() != null) {
 			for(Attribute attr: group_info.getGroup().getAttributes()) {

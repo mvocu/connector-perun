@@ -30,11 +30,13 @@ import org.identityconnectors.framework.common.objects.Schema;
 import org.identityconnectors.framework.common.objects.SchemaBuilder;
 import org.identityconnectors.framework.common.objects.SyncResultsHandler;
 import org.identityconnectors.framework.common.objects.SyncToken;
+import org.identityconnectors.framework.common.objects.Uid;
 import org.identityconnectors.framework.common.objects.filter.Filter;
 import org.identityconnectors.framework.common.objects.filter.FilterTranslator;
 import org.identityconnectors.framework.spi.Configuration;
 import org.identityconnectors.framework.spi.ConnectorClass;
 import org.identityconnectors.framework.spi.PoolableConnector;
+import org.identityconnectors.framework.spi.operations.DeleteOp;
 import org.identityconnectors.framework.spi.operations.SchemaOp;
 import org.identityconnectors.framework.spi.operations.SearchOp;
 import org.identityconnectors.framework.spi.operations.SyncOp;
@@ -48,7 +50,7 @@ import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
  */
 @ConnectorClass(displayNameKey = "cz.metacentrum.perun.polygon.connector", configurationClass = PerunRPCConfiguration.class)
 public class PerunRPCConnector 
-implements PoolableConnector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp, SchemaManager
+implements PoolableConnector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp, DeleteOp, SchemaManager
 {
 	private static final Log LOG = Log.getLog(PerunRPCConnector.class);
 	
@@ -155,6 +157,11 @@ implements PoolableConnector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp, Schema
 		return strategy.getLatestSyncToken(objectClass);
 	}
 
+	@Override
+	public void delete(ObjectClass objectClass, Uid uid, OperationOptions options) {
+		return;
+	}
+	
 	private void initSchemaAdapters() {
 		List<SchemaAdapter> adapters = Arrays.asList(
 				new ExtSourceSchemaAdapter(perun),
@@ -237,4 +244,5 @@ implements PoolableConnector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp, Schema
 	public ObjectSearch getObjectSearchForObjectClass(ObjectClass objectClass) {
 		return mapObjectClassToObjectSearch.get(objectClass.getObjectClassValue());
 	}
+
 }

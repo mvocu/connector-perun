@@ -88,7 +88,10 @@
                         </goals>
                         <configuration>
                             <!-- see https://github.com/OpenAPITools/openapi-generator/blob/master/modules/openapi-generator-maven-plugin/README.md -->
-                            <inputSpec>https://raw.githubusercontent.com/CESNET/perun/master/perun-openapi/openapi.yml</inputSpec>
+                            <!--
+							<inputSpec>https://raw.githubusercontent.com/CESNET/perun/master/perun-openapi/openapi.yml</inputSpec>
+							-->
+							<inputSpec>file:///home/michal/meta/perun/perun-openapi/openapi.yml</inputSpec>
                             <generatorName>java</generatorName>
                             <apiPackage>cz.metacentrum.perun.polygon.connector.rpc</apiPackage>
                             <modelPackage>cz.metacentrum.perun.polygon.connector.rpc.model</modelPackage>

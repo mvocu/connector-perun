@@ -15,14 +15,18 @@ import org.identityconnectors.framework.common.objects.filter.EqualsFilter;
 import org.identityconnectors.framework.common.objects.filter.EqualsIgnoreCaseFilter;
 import org.identityconnectors.framework.common.objects.filter.Filter;
 import org.identityconnectors.framework.spi.SearchResultsHandler;
+import org.springframework.web.client.HttpClientErrorException;
 
 import cz.metacentrum.perun.polygon.connector.GroupMemberSchemaAdapter.GroupMemberRelationBean;
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Attribute;
+import cz.metacentrum.perun.polygon.connector.rpc.model.Group;
 import cz.metacentrum.perun.polygon.connector.rpc.model.GroupMemberData;
 import cz.metacentrum.perun.polygon.connector.rpc.model.GroupMemberRelation;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Member;
 import cz.metacentrum.perun.polygon.connector.rpc.model.PerunBean;
+import cz.metacentrum.perun.polygon.connector.rpc.model.RichMember;
+import cz.metacentrum.perun.polygon.connector.rpc.model.User;
 
 public class GroupMemberSearch extends ObjectSearchBase implements ObjectSearch {
 
@@ -38,7 +42,15 @@ public class GroupMemberSearch extends ObjectSearchBase implements ObjectSearch 
 			return null;
 		}
 		LOG.info("Reading GroupMember with id {0}:{1}", id, ids[0]);
-		Member member = perun.getGroupsManager().getGroupMemberById(id, ids[0]);
+		Member member = null;
+		Group group = null;
+		try {
+			member = perun.getGroupsManager().getGroupMemberById(id, ids[0]);
+			group = perun.getGroupsManager().getGroupById(id);
+		} catch (HttpClientErrorException exeception) {
+			LOG.info("Query returned none group member");
+			return null;
+		}
 		LOG.info("Query returned {0} group member", member);
 
 		GroupMemberRelationBean result = null;
@@ -49,6 +61,9 @@ public class GroupMemberSearch extends ObjectSearchBase implements ObjectSearch 
 			memberRelation.setS(member.getStatus());
 			memberRelation.setSg(member.getSourceGroupId());
 			memberRelation.setT(member.getMembershipType());
+			memberRelation.setGn(group.getShortName());
+			memberRelation.setPg(group.getParentGroupId());
+			memberRelation.setU(member.getUserId());
 			
 			result = ((GroupMemberSchemaAdapter)this.schemaAdapter).new GroupMemberRelationBean(memberRelation);
 		}
@@ -75,7 +90,7 @@ public class GroupMemberSearch extends ObjectSearchBase implements ObjectSearch 
 				
 				if(member != null) {
 					mapResult(member.getRelation(), 
-						  perun.getAttributesManager().getMemberGroupAttributes(member.getId(), groupId), 
+						  perun.getAttributesManager().getMemberGroupAttributes(member.getRelation().getM(), groupId), 
 						  handler);
 				}
 				SearchResult result = new SearchResult(

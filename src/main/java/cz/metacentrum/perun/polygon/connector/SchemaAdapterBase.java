@@ -114,7 +114,9 @@ public abstract class SchemaAdapterBase implements SchemaAdapter {
 			break;
 		case "java.util.LinkedHashMap":
 			// TODO implement conversion from map
-			ab.addValue(((LinkedHashMap<?,?>)attr.getValue()).toString());
+			if(attr.getValue() != null) {
+				ab.addValue(((LinkedHashMap<?,?>)attr.getValue()).toString());
+			}
 			break;
 		default:
 			ab.addValue(attr.getValue());
