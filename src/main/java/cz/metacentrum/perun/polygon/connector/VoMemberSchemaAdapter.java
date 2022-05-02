@@ -56,7 +56,7 @@ public class VoMemberSchemaAdapter extends SchemaAdapterBase implements SchemaAd
 		member.addAttributeInfo(name.build());
 
 		// userId
-		AttributeInfoBuilder user_id = new AttributeInfoBuilder("member_user_id", Integer.class);
+		AttributeInfoBuilder user_id = new AttributeInfoBuilder("member_user_id", String.class);
 		user_id.setNativeName("userId");
 		user_id.setRequired(true);
 		user_id.setCreateable(true);
@@ -66,7 +66,7 @@ public class VoMemberSchemaAdapter extends SchemaAdapterBase implements SchemaAd
 		member.addAttributeInfo(user_id.build());
 		
 		// voId
-		AttributeInfoBuilder vo_id = new AttributeInfoBuilder("member_vo_id", Integer.class);
+		AttributeInfoBuilder vo_id = new AttributeInfoBuilder("member_vo_id", String.class);
 		vo_id.setNativeName("voId");
 		vo_id.setRequired(true);
 		vo_id.setCreateable(true);
@@ -160,12 +160,12 @@ public class VoMemberSchemaAdapter extends SchemaAdapterBase implements SchemaAd
 		// userId
 		AttributeBuilder ab = new AttributeBuilder();
 		ab.setName("member_user_id");
-		ab.addValue(member.getUserId());
+		ab.addValue(member.getUserId().toString());
 		out.addAttribute(ab.build());
 		// voId
 		ab = new AttributeBuilder();
 		ab.setName("member_vo_id");
-		ab.addValue(member.getVoId());
+		ab.addValue(member.getVoId().toString());
 		out.addAttribute(ab.build());
 		// status
 		ab = new AttributeBuilder();

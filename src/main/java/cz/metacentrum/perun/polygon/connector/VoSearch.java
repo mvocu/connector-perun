@@ -92,8 +92,13 @@ public class VoSearch extends ObjectSearchBase implements ObjectSearch {
 		if(pageSize != null && pageSize > 0) {
 			int size = vos.size();
 			int last = (pageOffset + pageSize > size) ? size : pageOffset + pageSize; 
-			vos= vos.subList(pageOffset, last);
-			remaining = size - last;
+			if(pageOffset > size) {
+				vos.clear();
+				remaining = 0;
+			} else {
+				vos = vos.subList(pageOffset, last);
+				remaining = size - last;
+			}
 		}
 		for(Vo vo : vos) {
 			mapResult(vo, handler);

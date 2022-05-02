@@ -91,7 +91,7 @@ public abstract class SchemaAdapterBase implements SchemaAdapter {
 	protected AttributeInfoBuilder createAttributeInfo(String name, AttributeDefinition attrDef) {
 		AttributeInfoBuilder attr = new AttributeInfoBuilder(name);
 		attr.setType(mapClass(attrDef.getType()));
-		attr.setNativeName(attrDef.getNamespace() + ":" + attrDef.getBaseFriendlyName());
+		attr.setNativeName(attrDef.getNamespace() + ":" + attrDef.getFriendlyName());
 		attr.setMultiValued(isMultivalued(attrDef));
 		attr.setCreateable(attrDef.getWritable());
 		attr.setUpdateable(attrDef.getWritable());

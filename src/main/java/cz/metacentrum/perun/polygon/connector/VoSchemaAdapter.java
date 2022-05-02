@@ -3,6 +3,7 @@ package cz.metacentrum.perun.polygon.connector;
 import java.util.LinkedHashSet;
 import java.util.List;
 
+import org.identityconnectors.framework.common.objects.AttributeBuilder;
 import org.identityconnectors.framework.common.objects.AttributeInfoBuilder;
 import org.identityconnectors.framework.common.objects.ConnectorObjectBuilder;
 import org.identityconnectors.framework.common.objects.Name;
@@ -87,6 +88,11 @@ public class VoSchemaAdapter extends SchemaAdapterBase implements SchemaAdapter 
 		out.setObjectClass(objectClass);
 		out.setName(vo.getShortName());
 		out.setUid(vo.getId().toString());
+		// voId
+		AttributeBuilder ab = new AttributeBuilder();
+		ab.setName("vo_short_name");
+		ab.addValue(vo.getShortName());
+		out.addAttribute(ab.build());
 		List<Attribute> attrs = perun.getAttributesManager().getVoAttributes(vo.getId());
 		for(Attribute attr: attrs) {
 			out.addAttribute(mapAttribute(attr));

@@ -3,6 +3,7 @@ package cz.metacentrum.perun.polygon.connector;
 import java.util.LinkedHashSet;
 import java.util.Optional;
 
+import org.identityconnectors.common.logging.Log;
 import org.identityconnectors.framework.common.objects.AttributeInfoBuilder;
 import org.identityconnectors.framework.common.objects.ConnectorObjectBuilder;
 import org.identityconnectors.framework.common.objects.Name;
@@ -16,6 +17,8 @@ import cz.metacentrum.perun.polygon.connector.rpc.model.RichUser;
 import cz.metacentrum.perun.polygon.connector.rpc.model.UserExtSource;
 
 public class UserSchemaAdapter extends SchemaAdapterBase {
+
+	private static final Log LOG = Log.getLog(UserSchemaAdapter.class);
 
 	private static final String NS_USER_ATTR_CORE = "urn:perun:user:attribute-def:core";
 	private static final String NS_USER_ATTR_DEF = "urn:perun:user:attribute-def:def";
@@ -90,11 +93,14 @@ public class UserSchemaAdapter extends SchemaAdapterBase {
 		Optional<UserExtSource> ues = user.getUserExtSources().stream()
 			.filter(ue -> { return ue.getExtSource().getName().equals(namespace); })
 			.findFirst();
+		String name = null;
 		if(ues.isPresent()) {
-			return ues.get().getLogin();
-		} else {
-			return user.getUuid().toString();
+			name = ues.get().getLogin();
 		}
+		if(name == null || name.isBlank()) {
+			name = user.getUuid().toString();
+		}
+		return name; 
 	}
 
 }
