@@ -51,7 +51,6 @@ public class GroupMemberSearch extends ObjectSearchBase implements ObjectSearch 
 			LOG.info("Query returned none group member");
 			return null;
 		}
-		LOG.info("Query returned {0} group member", member);
 
 		GroupMemberRelationBean result = null;
 		if(member != null) {

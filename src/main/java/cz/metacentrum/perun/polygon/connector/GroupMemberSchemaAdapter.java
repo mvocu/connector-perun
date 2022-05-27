@@ -174,7 +174,14 @@ public class GroupMemberSchemaAdapter extends SchemaAdapterBase implements Schem
 
 	@Override
 	public ConnectorObjectBuilder mapObject(ObjectClass objectClass, Object source) {
-		GroupMemberRelation member = (GroupMemberRelation)source;
+		GroupMemberRelation member = null;
+		if(source instanceof GroupMemberRelation) {
+			member = (GroupMemberRelation)source;
+		} else if(source instanceof GroupMemberRelationBean) {
+			member = ((GroupMemberRelationBean)source).getRelation();
+		} else {
+			throw new ClassCastException("Invalid object class " + objectClass.toString() + " passed as parameter.");
+		}
 		Integer groupId = member.getG();
 		ConnectorObjectBuilder out = new ConnectorObjectBuilder();
 		out.setObjectClass(objectClass);

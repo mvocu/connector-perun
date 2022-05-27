@@ -53,7 +53,6 @@ public class GroupSearch extends ObjectSearchBase implements ObjectSearch {
 			LOG.info("Query returned no group");
 			return null;
 		}
-		LOG.info("Query returned {0} group", group);
 		if(group != null) {
 			GroupInfoObject group_info = ((GroupSchemaAdapter)schemaAdapter).new GroupInfoObject(vo.getName(), group);
 			List<Group> includedIn = perun.getGroupsManager().getGroupUnions(group.getId(), true);

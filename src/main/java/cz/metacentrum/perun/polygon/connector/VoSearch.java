@@ -39,8 +39,6 @@ public class VoSearch extends ObjectSearchBase implements ObjectSearch {
 			LOG.info("Query returned no VO");
 			return null;
 		}
-		LOG.info("Query returned {0} VO", vo.toString());
-		
 		return vo;
 	}
 	
