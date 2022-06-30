@@ -17,6 +17,7 @@ import org.identityconnectors.framework.common.objects.filter.EqualsFilter;
 import org.identityconnectors.framework.common.objects.filter.EqualsIgnoreCaseFilter;
 import org.identityconnectors.framework.common.objects.filter.Filter;
 import org.identityconnectors.framework.spi.SearchResultsHandler;
+import org.springframework.web.client.HttpClientErrorException;
 
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
 import cz.metacentrum.perun.polygon.connector.rpc.model.Attribute;
@@ -37,7 +38,13 @@ public class UserSearch extends ObjectSearchBase {
 	@Override
 	public PerunBean readPerunBeanById(Integer id, Integer... ids) {
 		LOG.info("Reading user with uid {0}", id);
-		List<RichUser> users = perun.getUsersManager().getRichUsersWithAttributesByIds(Arrays.asList(id));
+		List<RichUser> users;
+		try {
+			users = perun.getUsersManager().getRichUsersWithAttributesByIds(Arrays.asList(id));
+		} catch (HttpClientErrorException exception) {
+			LOG.info("Query returned no user");
+			return null;
+		}
 		LOG.info("Query returned {0} users", users.size());
 		
 		if(!users.isEmpty()) {
@@ -100,6 +107,10 @@ public class UserSearch extends ObjectSearchBase {
 			int last = (pageOffset + pageSize > size) ? size : pageOffset + pageSize; 
 			userIds = userIds.subList(pageOffset, last);
 			remaining = size - last;
+			if(userIds.isEmpty()) {
+				LOG.warn("User sublist created from original size {0} at offsets {1} and {2} is empty", size, pageOffset, last);
+			}
+			LOG.info("Asking for details for {0} users", userIds.size());
 			users = perun.getUsersManager().getRichUsersWithAttributesByIds(userIds);
 		} else {
 			users = perun.getUsersManager().getAllRichUsersWithAttributes(true);

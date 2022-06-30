@@ -25,6 +25,7 @@ public class AuditlogSyncStrategy implements SyncStrategy {
 	private PerunRPC perun;
 	private SchemaManager schemaManager;
 	private String consumerName;
+	private Integer maxBacklogSize = 0;
 
 	private static final Log LOG = Log.getLog(GroupSearch.class);
 	
@@ -58,10 +59,11 @@ public class AuditlogSyncStrategy implements SyncStrategy {
 		
 	}
 	
-	public AuditlogSyncStrategy(SchemaManager schemaManager, PerunRPC perun, String name) {
+	public AuditlogSyncStrategy(SchemaManager schemaManager, PerunRPC perun, String name, Integer size) {
 		this.perun = perun;
 		this.schemaManager = schemaManager;
 		this.consumerName = name;
+		this.maxBacklogSize = size;
 	}
 
 	@Override
@@ -77,6 +79,7 @@ public class AuditlogSyncStrategy implements SyncStrategy {
 		}
 		
 	        Integer lastProcessedId = 0;
+		Integer lastMessageId = perun.getAuditlogManager().getLastMessageId();
 	        if (token == null) {
 	        	token = getLatestSyncToken(objectClass);
 	        }
@@ -88,7 +91,14 @@ public class AuditlogSyncStrategy implements SyncStrategy {
 	        }
 	        SyncToken finalToken = token;
 
-		perun.getAuditlogManager().setLastProcessedId(consumerName, lastProcessedId);
+	        /* check message limit */
+	        if(maxBacklogSize > 0 && lastMessageId - lastProcessedId > maxBacklogSize) {
+	        	LOG.warn("Synchronization backlog is too large, skipping to process only last {0} messages", maxBacklogSize);
+	        	lastProcessedId = lastMessageId - maxBacklogSize;
+	        }
+	        	
+	        LOG.info("Polling auditlog messages starting from {0} out of total {1}", lastProcessedId, lastMessageId);
+	        perun.getAuditlogManager().setLastProcessedId(consumerName, lastProcessedId);
 
 		List<AuditMessage> messages = perun.getAuditlogManager().pollConsumerMessages(consumerName);
 		if(messages == null) {

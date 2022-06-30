@@ -34,7 +34,7 @@
     <properties>
         <connectorPackage>cz.metacentrum.perun.polygon.connector</connectorPackage>
         <connectorClass>PerunRPCConnector</connectorClass>
-        <perun.version>3.28.0-SNAPSHOT</perun.version>
+        <perun.version>3.29.0-SNAPSHOT</perun.version>
         <project.source.version>11</project.source.version>
         <maven.compiler.source>${project.source.version}</maven.compiler.source>
         <maven.compiler.target>${project.source.version}</maven.compiler.target>

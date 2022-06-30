@@ -2,10 +2,13 @@ package cz.metacentrum.perun.polygon.connector;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 
 import org.identityconnectors.common.logging.Log;
 import org.identityconnectors.framework.common.objects.AttributeBuilder;
+import org.identityconnectors.framework.common.objects.AttributeInfo;
+import org.identityconnectors.framework.common.objects.AttributeInfo.Subtypes;
 import org.identityconnectors.framework.common.objects.AttributeInfoBuilder;
 import org.identityconnectors.framework.common.objects.ConnectorObjectBuilder;
 import org.identityconnectors.framework.common.objects.ObjectClass;
@@ -90,7 +93,11 @@ public abstract class SchemaAdapterBase implements SchemaAdapter {
 	
 	protected AttributeInfoBuilder createAttributeInfo(String name, AttributeDefinition attrDef) {
 		AttributeInfoBuilder attr = new AttributeInfoBuilder(name);
-		attr.setType(mapClass(attrDef.getType()));
+		Class<?> type = null;
+		attr.setType(type = mapClass(attrDef.getType()));
+		if(type == Map.class) {
+			attr.setSubtype("http://midpoint.evolveum.com/xml/ns/public/connector/icf-1/subtypes#PolyString");
+		}
 		attr.setNativeName(attrDef.getNamespace() + ":" + attrDef.getFriendlyName());
 		attr.setMultiValued(isMultivalued(attrDef));
 		attr.setCreateable(attrDef.getWritable());
@@ -115,7 +122,14 @@ public abstract class SchemaAdapterBase implements SchemaAdapter {
 		case "java.util.LinkedHashMap":
 			// TODO implement conversion from map
 			if(attr.getValue() != null) {
-				ab.addValue(((LinkedHashMap<?,?>)attr.getValue()).toString());
+				LinkedHashMap<String, String> converted = new LinkedHashMap<>();
+				((LinkedHashMap<?,?>)attr.getValue()).entrySet()
+					.stream().forEach(entry -> { 
+						converted.put(entry.getKey().toString(), entry.getValue().toString()); });
+				//ab.addValue(((LinkedHashMap<?,?>)attr.getValue()).toString());
+				if(!converted.isEmpty()) {
+					ab.addValue(converted);
+				}
 			}
 			break;
 		default:
@@ -131,7 +145,7 @@ public abstract class SchemaAdapterBase implements SchemaAdapter {
 			return String.class;
 
 		case "java.util.LinkedHashMap":
-			return String.class;
+			return Map.class;
 			
 		default:
 			break;

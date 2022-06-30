@@ -150,13 +150,13 @@ implements PoolableConnector, TestOp, SchemaOp, SearchOp<Filter>, SyncOp, Delete
 
 	@Override
 	public void sync(ObjectClass objectClass, SyncToken token, SyncResultsHandler handler, OperationOptions options) {
-		SyncStrategy strategy = new AuditlogSyncStrategy(this, perun, configuration.getPerunConsumerName());
+		SyncStrategy strategy = new AuditlogSyncStrategy(this, perun, configuration.getPerunConsumerName(), configuration.getMaxBacklogSize());
 		strategy.sync(objectClass, token, handler, options);
 	}
 
 	@Override
 	public SyncToken getLatestSyncToken(ObjectClass objectClass) {
-		SyncStrategy strategy = new AuditlogSyncStrategy(this, perun, configuration.getPerunConsumerName());
+		SyncStrategy strategy = new AuditlogSyncStrategy(this, perun, configuration.getPerunConsumerName(), configuration.getMaxBacklogSize());
 		return strategy.getLatestSyncToken(objectClass);
 	}
 
