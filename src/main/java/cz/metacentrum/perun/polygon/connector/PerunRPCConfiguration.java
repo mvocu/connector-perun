@@ -35,7 +35,7 @@ public class PerunRPCConfiguration extends AbstractConfiguration {
 	
 	private String perunConsumerName = null;
 
-	private Integer maxBacklogSize = 1000;
+	private Integer auditPageSize = 1000;
 	
 	@ConfigurationProperty(required = true, order = 1)
 	public String getPerunUrl() {
@@ -83,12 +83,12 @@ public class PerunRPCConfiguration extends AbstractConfiguration {
 	}
 
 	@ConfigurationProperty(required = false, order = 6)
-	public Integer getMaxBacklogSize() {
-		return maxBacklogSize;
+	public Integer getAuditPageSize() {
+		return auditPageSize;
 	}
 
-	public void setMaxBacklogSize(Integer maxBacklogSize) {
-		this.maxBacklogSize = maxBacklogSize;
+	public void setAuditPageSize(Integer pageSize) {
+		this.auditPageSize = pageSize;
 	}
 
 	@Override

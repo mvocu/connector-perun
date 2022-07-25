@@ -17,15 +17,19 @@ import cz.metacentrum.perun.polygon.connector.GroupMemberSchemaAdapter.GroupMemb
 import cz.metacentrum.perun.polygon.connector.rpc.PerunRPC;
 import cz.metacentrum.perun.polygon.connector.rpc.model.AuditEvent;
 import cz.metacentrum.perun.polygon.connector.rpc.model.AuditMessage;
+import cz.metacentrum.perun.polygon.connector.rpc.model.AuditMessagesPageQuery;
 import cz.metacentrum.perun.polygon.connector.rpc.model.GroupMemberRelation;
+import cz.metacentrum.perun.polygon.connector.rpc.model.InputGetMessagesPage;
+import cz.metacentrum.perun.polygon.connector.rpc.model.PaginatedAuditMessages;
 import cz.metacentrum.perun.polygon.connector.rpc.model.PerunBean;
+import cz.metacentrum.perun.polygon.connector.rpc.model.SortingOrder;
 
 public class AuditlogSyncStrategy implements SyncStrategy {
 
 	private PerunRPC perun;
 	private SchemaManager schemaManager;
 	private String consumerName;
-	private Integer maxBacklogSize = 0;
+	private Integer pageSize = 0;
 
 	private static final Log LOG = Log.getLog(GroupSearch.class);
 	
@@ -63,7 +67,7 @@ public class AuditlogSyncStrategy implements SyncStrategy {
 		this.perun = perun;
 		this.schemaManager = schemaManager;
 		this.consumerName = name;
-		this.maxBacklogSize = size;
+		this.pageSize = size;
 	}
 
 	@Override
@@ -89,265 +93,306 @@ public class AuditlogSyncStrategy implements SyncStrategy {
 	        } else {
 	        	LOG.warn("Synchronization token is not integer, ignoring");
 	        }
-	        SyncToken finalToken = token;
 
+	        SyncToken finalToken = token;
+	        AuditMessagesPageQuery pageQuery = new AuditMessagesPageQuery();
+	        InputGetMessagesPage inputPage = new InputGetMessagesPage();
+	        
 	        /* check message limit */
-	        if(maxBacklogSize > 0 && lastMessageId - lastProcessedId > maxBacklogSize) {
-	        	LOG.warn("Synchronization backlog is too large, skipping to process only last {0} messages", maxBacklogSize);
-	        	lastProcessedId = lastMessageId - maxBacklogSize;
+	        if(pageSize > 0 && lastMessageId - lastProcessedId > pageSize) {
+	        	LOG.warn("Synchronization backlog is too large, will read page by page.");
+	        	lastProcessedId = lastMessageId - pageSize;
 	        }
 	        	
-	        LOG.info("Polling auditlog messages starting from {0} out of total {1}", lastProcessedId, lastMessageId);
 	        perun.getAuditlogManager().setLastProcessedId(consumerName, lastProcessedId);
+	        
+	        Boolean keepProcessing = true;
+	        
+	        pageQuery.setPageSize(pageSize);
+	        pageQuery.setOrder(SortingOrder.ASCENDING);
+	        
+	        while(lastProcessedId < lastMessageId && keepProcessing) {
+	        	pageQuery.setOffset(lastProcessedId);
+	        	inputPage.setQuery(pageQuery);
+		        LOG.info("Reading auditlog messages starting from {0} to {1} out of {2}", lastProcessedId, lastProcessedId + pageSize - -1, lastMessageId);
+		        //PaginatedAuditMessages messagePage = perun.getAuditlogManager().getMessagesPage(inputPage);
+	        	List<AuditMessage> messages = perun.getAuditlogManager().pollConsumerMessages(consumerName);
+	        	// messages = messagePage.getData();
+	        	LOG.info("Received {0} messages", messages != null ? messages.size() : 0);
+		        if(messages == null || messages.size() == 0) {
+	        		LOG.info("No auditlog messages available.");
+	        		keepProcessing = false;
+	        	} else {
+	        		for(AuditMessage message : messages) {
+	        			lastProcessedId = message.getId();
+	        			try {
 
-		List<AuditMessage> messages = perun.getAuditlogManager().pollConsumerMessages(consumerName);
-		if(messages == null) {
-			LOG.info("No auditlog messages available.");
-		} else {
-			for(AuditMessage message : messages) {
-				try {
+	        				AuditEvent event = message.getEvent();
 
-					AuditEvent event = message.getEvent();
+	        				LOG.info("Auditlog message {0}: {1}", event.getName(), event.getMessage());
 
-					LOG.info("Auditlog message {0}: {1}", event.getName(), event.getMessage());
+	        				SyncToken deltaToken = new SyncToken(message.getId());
+	        				finalToken = deltaToken;
 
-					SyncToken deltaToken = new SyncToken(message.getId());
-					finalToken = deltaToken;
+	        				SyncDeltaBuilder deltaBuilder = new SyncDeltaBuilder();
+	        				deltaBuilder.setToken(deltaToken);				
 
-					SyncDeltaBuilder deltaBuilder = new SyncDeltaBuilder();
-					deltaBuilder.setToken(deltaToken);				
+	        				SyncDeltaType deltaType;
 
-					SyncDeltaType deltaType;
+	        				// get delta type
 
-					// get delta type
+	        				/*
+	        				 * Delete operations
+	        				 */
 
-					/*
-					 * Delete operations
-					 */
+	        				if(event.getName().matches(".*Deleted") ||
+	        						event.getName().matches(".*UserExtSourceRemovedFromUser")) {
 
-					if(event.getName().matches(".*Deleted") ||
-							event.getName().matches(".*UserExtSourceRemovedFromUser")) {
+	        					/*
+	        					 * Deletion events:
+	        					 *   - single Perun object has been deleted
+	        					 *   
+	        					 * NOTE: roughly equivalent to deletionEventProcessor in perun-ldapc
+	        					 */
+	        					deltaType = SyncDeltaType.DELETE;
 
-						/*
-						 * Deletion events:
-						 *   - single Perun object has been deleted
-						 *   
-						 * NOTE: roughly equivalent to deletionEventProcessor in perun-ldapc
-						 */
-						deltaType = SyncDeltaType.DELETE;
+	        					EventObjectInfo info = fetchBeanFromEvent(event);
+	        					if(info == null) {
+	        						continue;
+	        					}
+	        					if(!objectClass.is(ObjectClass.ALL_NAME) && 
+	        							!objectClass.is(info.getObjectClass().getObjectClassValue())) {
+	        						continue;
+	        					}
 
-						EventObjectInfo info = fetchBeanFromEvent(event);
-						if(info == null) {
-							continue;
-						}
-						if(!objectClass.is(ObjectClass.ALL_NAME) && 
-								!objectClass.is(info.getObjectClass().getObjectClassValue())) {
-							continue;
-						}
+	        					SchemaAdapter adapter = schemaManager.getSchemaAdapterForObjectClass(info.getObjectClass());
+	        					deltaBuilder.setUid(adapter.getUid(info.getObject()));
+	        					deltaBuilder.setObjectClass(info.getObjectClass());
 
-						SchemaAdapter adapter = schemaManager.getSchemaAdapterForObjectClass(info.getObjectClass());
-						deltaBuilder.setUid(adapter.getUid(info.getObject()));
-						deltaBuilder.setObjectClass(info.getObjectClass());
+	        				} else if(event.getName().matches(".*MemberRemovedFromGroup") ||
+	        						event.getName().matches(".*MemberRemovedFromGroupTotally")) {		
 
-					} else if(event.getName().matches(".*MemberRemovedFromGroup") ||
-							event.getName().matches(".*MemberRemovedFromGroupTotally")) {		
+	        					/*
+	        					 * Deletion of Perun relation interpreted as ICF object:
+	        					 *   - GroupMember object representing group membership
+	        					 */
+	        					deltaType = SyncDeltaType.DELETE;
+	        					ObjectClass deltaObjectClass = new ObjectClass(GroupMemberSchemaAdapter.OBJECTCLASS_NAME);
+	        					if(!objectClass.is(ObjectClass.ALL_NAME) && 
+	        							!objectClass.is(deltaObjectClass.getObjectClassValue())) {
+	        						continue;
+	        					}
 
-						/*
-						 * Deletion of Perun relation interpreted as ICF object:
-						 *   - GroupMember object representing group membership
-						 */
-						deltaType = SyncDeltaType.DELETE;
-						ObjectClass deltaObjectClass = new ObjectClass(GroupMemberSchemaAdapter.OBJECTCLASS_NAME);
-						if(!objectClass.is(ObjectClass.ALL_NAME) && 
-								!objectClass.is(deltaObjectClass.getObjectClassValue())) {
-							continue;
-						}
+	        					GroupMemberRelation group_member = new GroupMemberRelation();
+	        					group_member.setG(event.getGroup().getId());
+	        					group_member.setM(event.getMember().getId());
+	        					SchemaAdapter adapter = schemaManager.getSchemaAdapterForObjectClass(deltaObjectClass);
+	        					deltaBuilder.setUid(adapter.getUid(group_member));
+	        					deltaBuilder.setObjectClass(deltaObjectClass);
 
-						GroupMemberRelation group_member = new GroupMemberRelation();
-						group_member.setG(event.getGroup().getId());
-						group_member.setM(event.getMember().getId());
-						SchemaAdapter adapter = schemaManager.getSchemaAdapterForObjectClass(deltaObjectClass);
-						deltaBuilder.setUid(adapter.getUid(group_member));
-						deltaBuilder.setObjectClass(deltaObjectClass);
+	        				} else if(event.getName().matches(".*AllUserExtSourcesDeletedForUser")) {
 
-					} else if(event.getName().matches(".*AllUserExtSourcesDeletedForUser")) {
+	        					/* 
+	        					 * Deletion of group of objects
+	        					 * 
+	        					 * It was agreed that this event will be replaced by a set of more concrete 
+	        					 * events UserExtSourceRemovedFromUser.
+	        					 */
+	        					LOG.info("Event does not contain info on specific objects, skipping.");
+	        					continue;
 
-						/* 
-						 * Deletion of group of objects
-						 * 
-						 * It was agreed that this event will be replaced by a set of more concrete 
-						 * events UserExtSourceRemovedFromUser.
-						 */
-						LOG.info("Event does not contain info on specific objects, skipping.");
-						continue;
+	        					/*
+	        					 * Create operations 
+	        					 */
 
-						/*
-						 * Create operations 
-						 */
+	        				} else if(event.getName().matches(".*Created") ||
+	        						event.getName().matches(".*GroupCreatedInVo") ||
+	        						event.getName().matches(".*GroupCreatedAsSubgroup") ||
+	        						event.getName().matches(".*UserExtSourceAddedToUser")) {
 
-					} else if(event.getName().matches(".*Created") ||
-							event.getName().matches(".*GroupCreatedInVo") ||
-							event.getName().matches(".*GroupCreatedAsSubgroup") ||
-							event.getName().matches(".*UserExtSourceAddedToUser")) {
+	        					/*
+	        					 * Creation events: 
+	        					 *   - single Perun object was created
+	        					 *   - possible relations to other Perun objects (VO, parent Group) are encoded 
+	        					 *     within the primary object properties  
+	        					 *     
+	        					 * NOTE: roughly equivalent to creationEventProcessor in perun-ldapc
+	        					 */
+	        					deltaType = SyncDeltaType.CREATE;
 
-						/*
-						 * Creation events: 
-						 *   - single Perun object was created
-						 *   - possible relations to other Perun objects (VO, parent Group) are encoded 
-						 *     within the primary object properties  
-						 *     
-						 * NOTE: roughly equivalent to creationEventProcessor in perun-ldapc
-						 */
-						deltaType = SyncDeltaType.CREATE;
+	        					/* 
+	        					 * NOTE: Make sure this call returns the right bean here, 
+	        					 * especially when the event contains more than one bean.
+	        					 */
+	        					EventObjectInfo info = fetchBeanFromEvent(event);
+	        					if(info == null) {
+	        						continue;
+	        					}
+	        					if(!objectClass.is(ObjectClass.ALL_NAME) && 
+	        							!objectClass.is(info.getObjectClass().getObjectClassValue())) {
+	        						continue;
+	        					}
+	        					SchemaAdapter adapter = schemaManager.getSchemaAdapterForObjectClass(info.getObjectClass());
+	        					ObjectSearch search = schemaManager.getObjectSearchForObjectClass(info.getObjectClass());
+	        					PerunBean freshBean = search.readPerunBeanById(info.getObject().getId());
+	        					if(freshBean == null) {
+	        						LOG.info("No {0} with id {1} was found, skipping", info.getObject().getBeanName(), info.getObject().getId());
+	        						continue;
+	        					}
+	        					deltaBuilder.setObject(adapter.mapObject(info.getObjectClass(), freshBean).build());
 
-						/* 
-						 * NOTE: Make sure this call returns the right bean here, 
-						 * especially when the event contains more than one bean.
-						 */
-						EventObjectInfo info = fetchBeanFromEvent(event);
-						if(info == null) {
-							continue;
-						}
-						if(!objectClass.is(ObjectClass.ALL_NAME) && 
-								!objectClass.is(info.getObjectClass().getObjectClassValue())) {
-							continue;
-						}
-						SchemaAdapter adapter = schemaManager.getSchemaAdapterForObjectClass(info.getObjectClass());
-						ObjectSearch search = schemaManager.getObjectSearchForObjectClass(info.getObjectClass());
-						PerunBean freshBean = search.readPerunBeanById(info.getObject().getId());
-						deltaBuilder.setObject(adapter.mapObject(info.getObjectClass(), freshBean).build());
+	        				} else if(event.getName().matches(".*MemberAddedToGroup") ||
+	        						event.getName().matches(".*MemberValidatedInGroup")) {
 
-					} else if(event.getName().matches(".*MemberAddedToGroup") ||
-							event.getName().matches(".*MemberValidatedInGroup")) {
-
-						/*
-						 * Creation of Perun relation interpreted as ICF objects:
-						 *   - GroupMember object representing user membership in group
-						 *     
-						 *  NOTE: roughly equivalent to groupEventProcessor in perun-ldapc
-						 */
-						deltaType = SyncDeltaType.CREATE_OR_UPDATE;
-						ObjectClass deltaObjectClass = new ObjectClass(GroupMemberSchemaAdapter.OBJECTCLASS_NAME);
-						if(!objectClass.is(ObjectClass.ALL_NAME) && 
-								!objectClass.is(deltaObjectClass.getObjectClassValue())) {
-							continue;
-						}
-						SchemaAdapter adapter = schemaManager.getSchemaAdapterForObjectClass(deltaObjectClass);
-						ObjectSearch search = schemaManager.getObjectSearchForObjectClass(deltaObjectClass);
-						PerunBean freshBean = search.readPerunBeanById(event.getGroup().getId(), event.getMember().getId());
-						GroupMemberRelation group_member = ((GroupMemberRelationBean)freshBean).getRelation();
-						deltaBuilder.setObject(adapter.mapObject(deltaObjectClass, group_member).build());
+	        					/*
+	        					 * Creation of Perun relation interpreted as ICF objects:
+	        					 *   - GroupMember object representing user membership in group
+	        					 *     
+	        					 *  NOTE: roughly equivalent to groupEventProcessor in perun-ldapc
+	        					 */
+	        					deltaType = SyncDeltaType.CREATE_OR_UPDATE;
+	        					ObjectClass deltaObjectClass = new ObjectClass(GroupMemberSchemaAdapter.OBJECTCLASS_NAME);
+	        					if(!objectClass.is(ObjectClass.ALL_NAME) && 
+	        							!objectClass.is(deltaObjectClass.getObjectClassValue())) {
+	        						continue;
+	        					}
+	        					SchemaAdapter adapter = schemaManager.getSchemaAdapterForObjectClass(deltaObjectClass);
+	        					ObjectSearch search = schemaManager.getObjectSearchForObjectClass(deltaObjectClass);
+	        					PerunBean freshBean = search.readPerunBeanById(event.getGroup().getId(), event.getMember().getId());
+	        					if(freshBean == null) {
+	        						LOG.info("No {0} with id {1}:{2} was found, skipping", "GroupMember", event.getGroup().getId(), event.getMember().getId().toString());
+	        						continue;
+	        					}
+	        					GroupMemberRelation group_member = ((GroupMemberRelationBean)freshBean).getRelation();
+	        					deltaBuilder.setObject(adapter.mapObject(deltaObjectClass, group_member).build());
 
 
-						/*
-						 * Update operations
-						 */
+	        					/*
+	        					 * Update operations
+	        					 */
 
-					} else if(event.getName().matches(".*Updated") ||
-							event.getName().matches(".*GroupMoved")) {
+	        				} else if(event.getName().matches(".*Updated") ||
+	        						event.getName().matches(".*GroupMoved")) {
 
-						/*
-						 * Update events for the single Perun objects (this also includes renames)
-						 *
-						 * NOTE: roughly equivalent to updateEventProcessor in perun-ldapc 
-						 */
-						deltaType = SyncDeltaType.UPDATE;
+	        					/*
+	        					 * Update events for the single Perun objects (this also includes renames)
+	        					 *
+	        					 * NOTE: roughly equivalent to updateEventProcessor in perun-ldapc 
+	        					 */
+	        					deltaType = SyncDeltaType.UPDATE;
 
-						/* 
-						 * NOTE: Make sure this call returns the right bean here, 
-						 * especially when the event contains more than one bean.
-						 */
-						EventObjectInfo info = fetchBeanFromEvent(event);
-						if(info == null) {
-							continue;
-						}
-						if(!objectClass.is(ObjectClass.ALL_NAME) && 
-								!objectClass.is(info.getObjectClass().getObjectClassValue())) {
-							continue;
-						}
-						SchemaAdapter adapter = schemaManager.getSchemaAdapterForObjectClass(info.getObjectClass());
-						ObjectSearch search = schemaManager.getObjectSearchForObjectClass(info.getObjectClass());
-						PerunBean freshBean = search.readPerunBeanById(info.getObject().getId());
-						deltaBuilder.setObject(adapter.mapObject(info.getObjectClass(), freshBean).build());
+	        					/* 
+	        					 * NOTE: Make sure this call returns the right bean here, 
+	        					 * especially when the event contains more than one bean.
+	        					 */
+	        					EventObjectInfo info = fetchBeanFromEvent(event);
+	        					if(info == null) {
+	        						continue;
+	        					}
+	        					if(!objectClass.is(ObjectClass.ALL_NAME) && 
+	        							!objectClass.is(info.getObjectClass().getObjectClassValue())) {
+	        						continue;
+	        					}
+	        					SchemaAdapter adapter = schemaManager.getSchemaAdapterForObjectClass(info.getObjectClass());
+	        					ObjectSearch search = schemaManager.getObjectSearchForObjectClass(info.getObjectClass());
+	        					PerunBean freshBean = search.readPerunBeanById(info.getObject().getId());
+	        					if(freshBean == null) {
+	        						LOG.info("No {0} with id {1} was found, skipping", info.getObject().getBeanName(), info.getObject().getId());
+	        						continue;
+	        					}
+	        					deltaBuilder.setObject(adapter.mapObject(info.getObjectClass(), freshBean).build());
 
-					} else if(event.getName().matches(".*MemberExpiredInGroup") ||
-							event.getName().matches(".*MemberValidatedInGroup")) {
+	        				} else if(event.getName().matches(".*MemberExpiredInGroup") ||
+	        						event.getName().matches(".*MemberValidatedInGroup")) {
 
-						/*
-						 * Changes to relations represented as ICF objects:
-						 *   -  
-						 *   
-						 *   NOTE: relations can not be renamed, only deleted
-						 */
-						deltaType = SyncDeltaType.UPDATE;
-						ObjectClass deltaObjectClass = new ObjectClass(GroupMemberSchemaAdapter.OBJECTCLASS_NAME);
-						if(!objectClass.is(ObjectClass.ALL_NAME) && 
-								!objectClass.is(deltaObjectClass.getObjectClassValue())) {
-							continue;
-						}
-						SchemaAdapter adapter = schemaManager.getSchemaAdapterForObjectClass(deltaObjectClass);
-						ObjectSearch search = schemaManager.getObjectSearchForObjectClass(deltaObjectClass);
-						PerunBean freshBean = search.readPerunBeanById(event.getGroup().getId(), event.getMember().getId());
-						GroupMemberRelation group_member = ((GroupMemberRelationBean)freshBean).getRelation();
-						deltaBuilder.setObject(adapter.mapObject(deltaObjectClass, group_member).build());
+	        					/*
+	        					 * Changes to relations represented as ICF objects:
+	        					 *   -  
+	        					 *   
+	        					 *   NOTE: relations can not be renamed, only deleted
+	        					 */
+	        					deltaType = SyncDeltaType.UPDATE;
+	        					ObjectClass deltaObjectClass = new ObjectClass(GroupMemberSchemaAdapter.OBJECTCLASS_NAME);
+	        					if(!objectClass.is(ObjectClass.ALL_NAME) && 
+	        							!objectClass.is(deltaObjectClass.getObjectClassValue())) {
+	        						continue;
+	        					}
+	        					SchemaAdapter adapter = schemaManager.getSchemaAdapterForObjectClass(deltaObjectClass);
+	        					ObjectSearch search = schemaManager.getObjectSearchForObjectClass(deltaObjectClass);
+	        					PerunBean freshBean = search.readPerunBeanById(event.getGroup().getId(), event.getMember().getId());
+	        					if(freshBean == null) {
+	        						LOG.info("No {0} with id {1}:{2} was found, skipping", "GroupMember", event.getGroup().getId(), event.getMember().getId());
+	        						continue;
+	        					}
+	        					GroupMemberRelation group_member = ((GroupMemberRelationBean)freshBean).getRelation();
+	        					deltaBuilder.setObject(adapter.mapObject(deltaObjectClass, group_member).build());
 
-					} else if(event.getName().matches(".*Attribute.*")) {
+	        				} else if(event.getName().matches(".*Attribute.*")) {
 
-						/* 
-						 * Change of attributes of some object/relation
-						 *
-						 */
-						deltaType = SyncDeltaType.UPDATE;
+	        					/* 
+	        					 * Change of attributes of some object/relation
+	        					 *
+	        					 */
+	        					deltaType = SyncDeltaType.UPDATE;
 
-						if(event.getName().matches(".*ForMemberAndGroup.*")) {
+	        					if(event.getName().matches(".*ForMemberAndGroup.*")) {
 
-							ObjectClass deltaObjectClass = new ObjectClass(GroupMemberSchemaAdapter.OBJECTCLASS_NAME);
-							if(!objectClass.is(ObjectClass.ALL_NAME) && 
-									!objectClass.is(deltaObjectClass.getObjectClassValue())) {
-								continue;
-							}
-							SchemaAdapter adapter = schemaManager.getSchemaAdapterForObjectClass(deltaObjectClass);
-							ObjectSearch search = schemaManager.getObjectSearchForObjectClass(deltaObjectClass);
-							PerunBean freshBean = search.readPerunBeanById(event.getGroup().getId(), event.getMember().getId());
-							deltaBuilder.setObject(adapter.mapObject(deltaObjectClass, freshBean).build());
+	        						ObjectClass deltaObjectClass = new ObjectClass(GroupMemberSchemaAdapter.OBJECTCLASS_NAME);
+	        						if(!objectClass.is(ObjectClass.ALL_NAME) && 
+	        								!objectClass.is(deltaObjectClass.getObjectClassValue())) {
+	        							continue;
+	        						}
+	        						SchemaAdapter adapter = schemaManager.getSchemaAdapterForObjectClass(deltaObjectClass);
+	        						ObjectSearch search = schemaManager.getObjectSearchForObjectClass(deltaObjectClass);
+	        						PerunBean freshBean = search.readPerunBeanById(event.getGroup().getId(), event.getMember().getId());
+		        					if(freshBean == null) {
+		        						LOG.info("No {0} with id {1}:{2} was found, skipping", "GroupMember", event.getGroup().getId(), event.getMember().getId());
+		        						continue;
+		        					}
+	        						deltaBuilder.setObject(adapter.mapObject(deltaObjectClass, freshBean).build());
 
-						} else {
+	        					} else {
 
-							EventObjectInfo info = fetchBeanFromEvent(event);
-							if(info == null) {
-								continue;
-							}
-							if(!objectClass.is(ObjectClass.ALL_NAME) && 
-									!objectClass.is(info.getObjectClass().getObjectClassValue())) {
-								continue;
-							}
-							SchemaAdapter adapter = schemaManager.getSchemaAdapterForObjectClass(info.getObjectClass());
-							ObjectSearch search = schemaManager.getObjectSearchForObjectClass(info.getObjectClass());
-							PerunBean freshBean = search.readPerunBeanById(info.getObject().getId());
-							deltaBuilder.setObject(adapter.mapObject(info.getObjectClass(), freshBean).build());
+	        						EventObjectInfo info = fetchBeanFromEvent(event);
+	        						if(info == null) {
+	        							continue;
+	        						}
+	        						if(!objectClass.is(ObjectClass.ALL_NAME) && 
+	        								!objectClass.is(info.getObjectClass().getObjectClassValue())) {
+	        							continue;
+	        						}
+	        						SchemaAdapter adapter = schemaManager.getSchemaAdapterForObjectClass(info.getObjectClass());
+	        						ObjectSearch search = schemaManager.getObjectSearchForObjectClass(info.getObjectClass());
+	        						PerunBean freshBean = search.readPerunBeanById(info.getObject().getId());
+		        					if(freshBean == null) {
+		        						LOG.info("No {0} with id {1} was found, skipping", info.getObject().getBeanName(), info.getObject().getId());
+		        						continue;
+		        					}
+	        						deltaBuilder.setObject(adapter.mapObject(info.getObjectClass(), freshBean).build());
 
-						}
+	        					}
 
-					} else {
-						LOG.info("Unknown auditlog message {0}, skipping.", event.getName());
-						continue;
-					}
+	        				} else {
+	        					LOG.info("Unknown auditlog message {0}, skipping.", event.getName());
+	        					continue;
+	        				}
 
-					deltaBuilder.setDeltaType(deltaType);
+	        				deltaBuilder.setDeltaType(deltaType);
 
-					LOG.info("Handling event as {0} of {1}:{2}", deltaType.toString(),
-							deltaBuilder.getObjectClass() != null ? deltaBuilder.getObjectClass().getObjectClassValue() : "null", 
-									deltaBuilder.getUid() != null ? deltaBuilder.getUid().getUidValue() : "null");
+	        				LOG.info("Handling event as {0} of {1}:{2}", deltaType.toString(),
+	        						deltaBuilder.getObjectClass() != null ? deltaBuilder.getObjectClass().getObjectClassValue() : "null", 
+	        								deltaBuilder.getUid() != null ? deltaBuilder.getUid().getUidValue() : "null");
 
-					handler.handle(deltaBuilder.build());
-					
-				} catch(HttpClientErrorException e) {
-					LOG.warn("Exception from Perun operation: {0}", e.getMessage());
-					continue;
-				}
-			}
-		}
+	        				handler.handle(deltaBuilder.build());
 
+	        			} catch(HttpClientErrorException e) {
+	        				LOG.warn("Exception from Perun operation: {0}", e.getMessage());
+	        				continue;
+	        			}
+	        		} /* end for */
+	        	} /* end if */ 
+	        } /* end while loop */
+	        
 		if (handler instanceof SyncTokenResultsHandler && finalToken != null) {
 			((SyncTokenResultsHandler)handler).handleResult(finalToken);
 		}
