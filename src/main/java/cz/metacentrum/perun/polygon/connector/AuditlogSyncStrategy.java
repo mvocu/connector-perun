@@ -1,5 +1,6 @@
 package cz.metacentrum.perun.polygon.connector;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.identityconnectors.common.logging.Log;
@@ -95,35 +96,45 @@ public class AuditlogSyncStrategy implements SyncStrategy {
 	        }
 
 	        SyncToken finalToken = token;
-	        AuditMessagesPageQuery pageQuery = new AuditMessagesPageQuery();
-	        InputGetMessagesPage inputPage = new InputGetMessagesPage();
 	        
+	        Boolean pagingRead = false;
 	        /* check message limit */
 	        if(pageSize > 0 && lastMessageId - lastProcessedId > pageSize) {
 	        	LOG.warn("Synchronization backlog is too large, will read page by page.");
-	        	lastProcessedId = lastMessageId - pageSize;
+	        	pagingRead = true;
+	        	//lastProcessedId = lastMessageId - pageSize;
 	        }
 	        	
 	        perun.getAuditlogManager().setLastProcessedId(consumerName, lastProcessedId);
 	        
 	        Boolean keepProcessing = true;
 	        
-	        pageQuery.setPageSize(pageSize);
-	        pageQuery.setOrder(SortingOrder.ASCENDING);
-	        
 	        while(lastProcessedId < lastMessageId && keepProcessing) {
-	        	pageQuery.setOffset(lastProcessedId);
-	        	inputPage.setQuery(pageQuery);
-		        LOG.info("Reading auditlog messages starting from {0} to {1} out of {2}", lastProcessedId, lastProcessedId + pageSize - -1, lastMessageId);
-		        //PaginatedAuditMessages messagePage = perun.getAuditlogManager().getMessagesPage(inputPage);
-	        	List<AuditMessage> messages = perun.getAuditlogManager().pollConsumerMessages(consumerName);
-	        	// messages = messagePage.getData();
+	        	List<AuditMessage> messages = null;
+	        	if(pagingRead) {
+	        		LOG.info("Reading auditlog messages starting from {0} to {1} out of {2}", lastProcessedId, lastProcessedId + pageSize, lastMessageId);
+	        		messages = perun.getAuditlogManager().getMessagesByIdAndCount(lastProcessedId + pageSize, pageSize);
+	        		Collections.reverse(messages);
+	        	} else {
+	        		LOG.info("Reading auditlog messages starting from {0}", lastProcessedId);
+		        	messages = perun.getAuditlogManager().pollConsumerMessages(consumerName);
+		        	/* we have read everything up to the end */
+		        	keepProcessing = false;
+	        	}
 	        	LOG.info("Received {0} messages", messages != null ? messages.size() : 0);
 		        if(messages == null || messages.size() == 0) {
 	        		LOG.info("No auditlog messages available.");
 	        		keepProcessing = false;
 	        	} else {
 	        		for(AuditMessage message : messages) {
+	        			if(lastProcessedId >= message.getId()) {
+	        				LOG.info("Skipping already processed message {0}", message.getId());
+	        				/* if we only encounter already processed messages, break the loop */
+	        				keepProcessing = false;
+	        				continue;
+	        			}
+	        			/* there is something new, so keep reading */
+	        			keepProcessing = true;
 	        			lastProcessedId = message.getId();
 	        			try {
 
@@ -379,9 +390,11 @@ public class AuditlogSyncStrategy implements SyncStrategy {
 
 	        				deltaBuilder.setDeltaType(deltaType);
 
-	        				LOG.info("Handling event as {0} of {1}:{2}", deltaType.toString(),
+	        				LOG.info("Handling event as {0} of {1}:{2}, token {3}", deltaType.toString(),
 	        						deltaBuilder.getObjectClass() != null ? deltaBuilder.getObjectClass().getObjectClassValue() : "null", 
-	        								deltaBuilder.getUid() != null ? deltaBuilder.getUid().getUidValue() : "null");
+	        						deltaBuilder.getUid() != null ? deltaBuilder.getUid().getUidValue() : "null",
+								deltaBuilder.getToken().toString()
+	        						);
 
 	        				handler.handle(deltaBuilder.build());
 
